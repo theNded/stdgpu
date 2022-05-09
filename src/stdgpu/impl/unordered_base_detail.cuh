@@ -1070,7 +1070,7 @@ unordered_base<Key, Value, KeyFromValue, Hash, KeyEqual, Allocator>::createDevic
 
     // excess count is estimated by the expected collision count and conservatively lowered since entries falling into
     // regular buckets are already included here
-    index_t excess_count = std::max<index_t>(1, expected_collisions(bucket_count, capacity) * 2 / 3);
+    index_t excess_count = std::max<index_t>(1, expected_collisions(bucket_count, capacity) * 2);
 
     index_t total_count = bucket_count + excess_count;
 
