@@ -17,10 +17,10 @@
 #define STDGPU_MEMORY_DETAIL_H
 
 #include <cstdio>
-#include <thrust/for_each.h>
 #include <type_traits>
+#include <utility>
 
-#include <stdgpu/attribute.h>
+#include <stdgpu/algorithm.h>
 #include <stdgpu/cstddef.h>
 #include <stdgpu/impl/type_traits.h>
 #include <stdgpu/iterator.h>
@@ -28,10 +28,7 @@
 #include <stdgpu/platform.h>
 #include <stdgpu/utility.h>
 
-namespace stdgpu
-{
-
-namespace detail
+namespace stdgpu::detail
 {
 
 template <typename T>
@@ -44,17 +41,17 @@ template <typename T>
 bool
 is_destroy_optimizable()
 {
-    return std::is_trivially_destructible<T>::value;
+    return std::is_trivially_destructible_v<T>;
 }
 
 template <typename T, typename Allocator>
 bool
 is_allocator_destroy_optimizable()
 {
-    return std::is_trivially_destructible<T>::value && detail::is_base<allocator_traits<Allocator>>::value;
+    return std::is_trivially_destructible_v<T> && detail::is_base_v<allocator_traits<Allocator>>;
 }
 
-STDGPU_NODISCARD void*
+[[nodiscard]] void*
 allocate(index64_t bytes, dynamic_memory_type type);
 
 void
@@ -68,54 +65,77 @@ memcpy(void* destination,
        dynamic_memory_type source_type,
        const bool external_memory);
 
-template <typename T>
-class construct_value
+template <typename Iterator, typename T>
+class uninitialized_fill_functor
 {
 public:
-    STDGPU_HOST_DEVICE
-    explicit construct_value(const T& value)
-      : _value(value)
+    uninitialized_fill_functor(Iterator begin, const T& value) // NOLINT(modernize-pass-by-value)
+      : _begin(begin)
+      , _value(value)
     {
     }
 
     STDGPU_HOST_DEVICE void
-    operator()(T& t) const
+    operator()(const index64_t i)
     {
-        construct_at(&t, _value);
+        construct_at(to_address(_begin + i), _value);
     }
 
 private:
+    Iterator _begin;
     T _value;
 };
 
-template <typename Iterator, typename T>
-void
-uninitialized_fill(Iterator begin, Iterator end, const T& value)
+template <typename InputIt, typename OutputIt>
+class uninitialized_copy_functor
 {
-    // Define own version as thrust uses an optimization too aggressively which causes compilation failures for certain
-    // types
-    thrust::for_each(begin, end, construct_value<T>(value));
-}
-
-template <typename T>
-struct destroy_value
-{
-    STDGPU_HOST_DEVICE void
-    operator()(T& t) const
+public:
+    uninitialized_copy_functor(InputIt begin, OutputIt output_begin)
+      : _begin(begin)
+      , _output_begin(output_begin)
     {
-        destroy_at(&t);
     }
+
+    STDGPU_HOST_DEVICE void
+    operator()(const index64_t i)
+    {
+        // Directly dereference _begin instead of trying to get its raw pointer.
+        // This adds support for transform_iterator, etc. which neither have operator->() nor get().
+        construct_at(to_address(_output_begin + i), _begin[i]);
+    }
+
+private:
+    InputIt _begin;
+    OutputIt _output_begin;
 };
 
 template <typename Iterator>
-void
-unoptimized_destroy(Iterator first, Iterator last)
+class destroy_functor
 {
-    thrust::for_each(first, last, detail::destroy_value<typename std::iterator_traits<Iterator>::value_type>());
-}
+public:
+    explicit destroy_functor(Iterator first)
+      : _first(first)
+    {
+    }
 
+    STDGPU_HOST_DEVICE void
+    operator()(const index64_t i)
+    {
+        destroy_at(to_address(_first + i));
+    }
+
+private:
+    Iterator _first;
+};
+
+template <typename ExecutionPolicy, typename Iterator>
 void
-workaround_synchronize_device_thrust();
+unoptimized_destroy(ExecutionPolicy&& policy, Iterator first, Iterator last)
+{
+    for_each_index(std::forward<ExecutionPolicy>(policy),
+                   static_cast<index64_t>(last - first),
+                   destroy_functor<Iterator>(first));
+}
 
 void
 workaround_synchronize_managed_memory();
@@ -165,9 +185,7 @@ destroyUninitializedManagedArray(Allocator& managed_allocator, T*& managed_array
     managed_array = nullptr;
 }
 
-} // namespace detail
-
-} // namespace stdgpu
+} // namespace stdgpu::detail
 
 template <typename T>
 T*
@@ -202,11 +220,10 @@ createDeviceArray(Allocator& device_allocator, const stdgpu::index64_t count, co
         return nullptr;
     }
 
-    stdgpu::detail::uninitialized_fill(stdgpu::device_begin(device_array),
-                                       stdgpu::device_end(device_array),
-                                       default_value);
-
-    stdgpu::detail::workaround_synchronize_device_thrust();
+    stdgpu::uninitialized_fill(stdgpu::execution::device,
+                               stdgpu::device_begin(device_array),
+                               stdgpu::device_end(device_array),
+                               default_value);
 
     return device_array;
 }
@@ -232,7 +249,10 @@ createHostArray(Allocator& host_allocator, const stdgpu::index64_t count, const 
         return nullptr;
     }
 
-    stdgpu::detail::uninitialized_fill(stdgpu::host_begin(host_array), stdgpu::host_end(host_array), default_value);
+    stdgpu::uninitialized_fill(stdgpu::execution::host,
+                               stdgpu::host_begin(host_array),
+                               stdgpu::host_end(host_array),
+                               default_value);
 
     return host_array;
 }
@@ -266,11 +286,10 @@ createManagedArray(Allocator& managed_allocator,
 #if STDGPU_DETAIL_IS_DEVICE_COMPILED
         case Initialization::DEVICE:
         {
-            stdgpu::detail::uninitialized_fill(stdgpu::device_begin(managed_array),
-                                               stdgpu::device_end(managed_array),
-                                               default_value);
-
-            stdgpu::detail::workaround_synchronize_device_thrust();
+            stdgpu::uninitialized_fill(stdgpu::execution::device,
+                                       stdgpu::device_begin(managed_array),
+                                       stdgpu::device_end(managed_array),
+                                       default_value);
         }
         break;
 #else
@@ -278,16 +297,17 @@ createManagedArray(Allocator& managed_allocator,
         {
             // Same as host path
         }
-            STDGPU_FALLTHROUGH;
+            [[fallthrough]];
 #endif
 
         case Initialization::HOST:
         {
             stdgpu::detail::workaround_synchronize_managed_memory();
 
-            stdgpu::detail::uninitialized_fill(stdgpu::host_begin(managed_array),
-                                               stdgpu::host_end(managed_array),
-                                               default_value);
+            stdgpu::uninitialized_fill(stdgpu::execution::host,
+                                       stdgpu::host_begin(managed_array),
+                                       stdgpu::host_end(managed_array),
+                                       default_value);
         }
         break;
 
@@ -327,9 +347,7 @@ template <typename T, typename Allocator>
 void
 destroyDeviceArray(Allocator& device_allocator, T*& device_array)
 {
-    stdgpu::destroy(stdgpu::device_begin(device_array), stdgpu::device_end(device_array));
-
-    stdgpu::detail::workaround_synchronize_device_thrust();
+    stdgpu::destroy(stdgpu::execution::device, stdgpu::device_begin(device_array), stdgpu::device_end(device_array));
 
     stdgpu::detail::destroyUninitializedDeviceArray<T, Allocator>(device_allocator, device_array);
 }
@@ -348,7 +366,7 @@ template <typename T, typename Allocator>
 void
 destroyHostArray(Allocator& host_allocator, T*& host_array)
 {
-    stdgpu::destroy(stdgpu::host_begin(host_array), stdgpu::host_end(host_array));
+    stdgpu::destroy(stdgpu::execution::host, stdgpu::host_begin(host_array), stdgpu::host_end(host_array));
 
     stdgpu::detail::destroyUninitializedHostArray<T, Allocator>(host_allocator, host_array);
 }
@@ -368,7 +386,7 @@ void
 destroyManagedArray(Allocator& managed_allocator, T*& managed_array)
 {
     // Call on host since the initialization place is not known
-    stdgpu::destroy(stdgpu::host_begin(managed_array), stdgpu::host_end(managed_array));
+    stdgpu::destroy(stdgpu::execution::host, stdgpu::host_begin(managed_array), stdgpu::host_end(managed_array));
 
     stdgpu::detail::destroyUninitializedManagedArray<T, Allocator>(managed_allocator, managed_array);
 }
@@ -555,12 +573,12 @@ namespace stdgpu
 
 template <typename T>
 template <typename U>
-safe_device_allocator<T>::safe_device_allocator(STDGPU_MAYBE_UNUSED const safe_device_allocator<U>& other)
+safe_device_allocator<T>::safe_device_allocator([[maybe_unused]] const safe_device_allocator<U>& other) noexcept
 {
 }
 
 template <typename T>
-STDGPU_NODISCARD T*
+[[nodiscard]] T*
 safe_device_allocator<T>::allocate(index64_t n)
 {
     T* p = static_cast<T*>(
@@ -581,12 +599,12 @@ safe_device_allocator<T>::deallocate(T* p, index64_t n)
 
 template <typename T>
 template <typename U>
-safe_host_allocator<T>::safe_host_allocator(STDGPU_MAYBE_UNUSED const safe_host_allocator<U>& other)
+safe_host_allocator<T>::safe_host_allocator([[maybe_unused]] const safe_host_allocator<U>& other) noexcept
 {
 }
 
 template <typename T>
-STDGPU_NODISCARD T*
+[[nodiscard]] T*
 safe_host_allocator<T>::allocate(index64_t n)
 {
     T* p = static_cast<T*>(
@@ -607,12 +625,12 @@ safe_host_allocator<T>::deallocate(T* p, index64_t n)
 
 template <typename T>
 template <typename U>
-safe_managed_allocator<T>::safe_managed_allocator(STDGPU_MAYBE_UNUSED const safe_managed_allocator<U>& other)
+safe_managed_allocator<T>::safe_managed_allocator([[maybe_unused]] const safe_managed_allocator<U>& other) noexcept
 {
 }
 
 template <typename T>
-STDGPU_NODISCARD T*
+[[nodiscard]] T*
 safe_managed_allocator<T>::allocate(index64_t n)
 {
     T* p = static_cast<T*>(
@@ -643,7 +661,7 @@ typename allocator_traits<Allocator>::pointer
 allocator_traits<Allocator>::allocate(Allocator& a,
                                       typename allocator_traits<Allocator>::index_type n,
                                       // cppcheck-suppress syntaxError
-                                      STDGPU_MAYBE_UNUSED typename allocator_traits<Allocator>::const_void_pointer hint)
+                                      [[maybe_unused]] typename allocator_traits<Allocator>::const_void_pointer hint)
 {
     return a.allocate(n);
 }
@@ -660,7 +678,7 @@ allocator_traits<Allocator>::deallocate(Allocator& a,
 template <typename Allocator>
 template <typename T, class... Args>
 STDGPU_HOST_DEVICE void
-allocator_traits<Allocator>::construct(STDGPU_MAYBE_UNUSED Allocator& a, T* p, Args&&... args)
+allocator_traits<Allocator>::construct([[maybe_unused]] Allocator& a, T* p, Args&&... args)
 {
     construct_at(p, forward<Args>(args)...);
 }
@@ -668,16 +686,16 @@ allocator_traits<Allocator>::construct(STDGPU_MAYBE_UNUSED Allocator& a, T* p, A
 template <typename Allocator>
 template <typename T>
 STDGPU_HOST_DEVICE void
-allocator_traits<Allocator>::destroy(STDGPU_MAYBE_UNUSED Allocator& a, T* p)
+allocator_traits<Allocator>::destroy([[maybe_unused]] Allocator& a, T* p)
 {
     destroy_at(p);
 }
 
 template <typename Allocator>
 STDGPU_HOST_DEVICE typename allocator_traits<Allocator>::index_type
-allocator_traits<Allocator>::max_size(STDGPU_MAYBE_UNUSED const Allocator& a)
+allocator_traits<Allocator>::max_size([[maybe_unused]] const Allocator& a) noexcept
 {
-    return stdgpu::numeric_limits<index_type>::max() / sizeof(value_type);
+    return numeric_limits<index_type>::max() / sizeof(value_type);
 }
 
 template <typename Allocator>
@@ -685,6 +703,53 @@ Allocator
 allocator_traits<Allocator>::select_on_container_copy_construction(const Allocator& a)
 {
     return a;
+}
+
+template <typename T>
+STDGPU_HOST_DEVICE T*
+to_address(T* p) noexcept
+{
+    return p;
+}
+
+// Use pre-C++17 SFINAE for dispatching due to wrong missing-return warning caused by NVCC
+// (potentially fixed in CUDA 11.5+)
+/*
+template <typename Ptr>
+STDGPU_HOST_DEVICE auto
+to_address(const Ptr& p) noexcept
+{
+    if constexpr (detail::has_arrow_operator_v<Ptr>)
+    {
+        return to_address(p.operator->());
+    }
+    else if constexpr (!detail::has_arrow_operator_v<Ptr> && detail::has_get_v<Ptr>)
+    {
+        return to_address(p.get());
+    }
+    else
+    {
+        static_assert(detail::dependent_false_v<Ptr>, "Ptr has neither operator->() or get() defined.");
+
+        // This reduces the number of compiler errors in calling contexts and makes the failed assertion more apparent.
+        return static_cast<void*>(nullptr);
+    }
+}
+*/
+
+template <typename Ptr, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::has_arrow_operator_v<Ptr>)>
+STDGPU_HOST_DEVICE auto
+to_address(const Ptr& p) noexcept
+{
+    return to_address(p.operator->());
+}
+
+template <typename Ptr,
+          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(!detail::has_arrow_operator_v<Ptr> && detail::has_get_v<Ptr>)>
+STDGPU_HOST_DEVICE auto
+to_address(const Ptr& p) noexcept
+{
+    return to_address(p.get());
 }
 
 template <typename T, typename... Args>
@@ -701,25 +766,60 @@ destroy_at(T* p)
     p->~T();
 }
 
-template <typename Iterator>
+template <typename ExecutionPolicy, typename Iterator, typename T>
 void
-destroy(Iterator first, Iterator last)
+uninitialized_fill(ExecutionPolicy&& policy, Iterator begin, Iterator end, const T& value)
 {
-    using T = typename std::iterator_traits<Iterator>::value_type;
+    uninitialized_fill_n(std::forward<ExecutionPolicy>(policy), begin, static_cast<index64_t>(end - begin), value);
+}
 
-    if (!detail::is_destroy_optimizable<T>())
+template <typename ExecutionPolicy, typename Iterator, typename Size, typename T>
+Iterator
+uninitialized_fill_n(ExecutionPolicy&& policy, Iterator begin, Size n, const T& value)
+{
+    for_each_index(std::forward<ExecutionPolicy>(policy),
+                   n,
+                   detail::uninitialized_fill_functor<Iterator, T>(begin, value));
+    return begin + n;
+}
+
+template <typename ExecutionPolicy, typename InputIt, typename OutputIt>
+OutputIt
+uninitialized_copy(ExecutionPolicy&& policy, InputIt begin, InputIt end, OutputIt output_begin)
+{
+    return uninitialized_copy_n(std::forward<ExecutionPolicy>(policy),
+                                begin,
+                                static_cast<index64_t>(end - begin),
+                                output_begin);
+}
+
+template <typename ExecutionPolicy, typename InputIt, typename Size, typename OutputIt>
+OutputIt
+uninitialized_copy_n(ExecutionPolicy&& policy, InputIt begin, Size n, OutputIt output_begin)
+{
+    for_each_index(std::forward<ExecutionPolicy>(policy),
+                   n,
+                   detail::uninitialized_copy_functor<InputIt, OutputIt>(begin, output_begin));
+    return output_begin + n;
+}
+
+template <typename ExecutionPolicy, typename Iterator>
+void
+destroy(ExecutionPolicy&& policy, Iterator first, Iterator last)
+{
+    if (!detail::is_destroy_optimizable<typename std::iterator_traits<Iterator>::value_type>())
     {
-        thrust::for_each(first, last, detail::destroy_value<T>());
+        detail::unoptimized_destroy(std::forward<ExecutionPolicy>(policy), first, last);
     }
 }
 
-template <typename Iterator, typename Size>
+template <typename ExecutionPolicy, typename Iterator, typename Size>
 Iterator
-destroy_n(Iterator first, Size n)
+destroy_n(ExecutionPolicy&& policy, Iterator first, Size n)
 {
     Iterator last = first + n;
 
-    destroy(first, last);
+    destroy(std::forward<ExecutionPolicy>(policy), first, last);
 
     return last;
 }
@@ -762,7 +862,7 @@ deregister_memory(T* p, index64_t n, dynamic_memory_type memory_type)
 }
 
 template <>
-stdgpu::index64_t
+index64_t
 size_bytes(void* array);
 
 template <typename T>

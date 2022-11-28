@@ -62,20 +62,20 @@ public:
      * \brief Default constructor
      */
     STDGPU_HOST_DEVICE
-    test_device_allocator();
+    test_device_allocator() noexcept;
 
     /**
      * \brief Destructor
      */
     STDGPU_HOST_DEVICE
-    ~test_device_allocator();
+    ~test_device_allocator() noexcept;
 
     /**
      * \brief Copy constructor
      * \param[in] other The allocator to be copied from
      */
     STDGPU_HOST_DEVICE
-    test_device_allocator(const test_device_allocator& other);
+    test_device_allocator(const test_device_allocator& other) noexcept;
 
     /**
      * \brief Deleted copy assignment operator
@@ -90,14 +90,25 @@ public:
      */
     template <typename U>
     explicit STDGPU_HOST_DEVICE
-    test_device_allocator(const test_device_allocator<U>& other);
+    test_device_allocator(const test_device_allocator<U>& other) noexcept;
+
+    /**
+     * \brief Deleted move constructor
+     */
+    test_device_allocator(test_device_allocator&&) = delete;
+
+    /**
+     * \brief Deleted move assignment operator
+     */
+    test_device_allocator&
+    operator=(test_device_allocator&&) = delete;
 
     /**
      * \brief Allocates a memory block of the given size
      * \param[in] n The size of the memory block in bytes
      * \return A pointer to the allocated memory block
      */
-    STDGPU_NODISCARD T*
+    [[nodiscard]] T*
     allocate(stdgpu::index64_t n);
 
     /**

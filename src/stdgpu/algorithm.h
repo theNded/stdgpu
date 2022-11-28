@@ -26,6 +26,9 @@
  * \file stdgpu/algorithm.h
  */
 
+// For convenient calls of all policy-based algorithms
+#include <stdgpu/execution.h>
+
 #include <stdgpu/platform.h>
 
 namespace stdgpu
@@ -68,6 +71,85 @@ max(const T& a, const T& b);
 template <class T>
 /*constexpr*/ STDGPU_HOST_DEVICE const T&
 clamp(const T& v, const T& lower, const T& upper);
+
+/**
+ * \ingroup algorithm
+ * \brief Calls the given unary function with an index from the range [0, size)
+ * \tparam IndexType The type of the index values
+ * \tparam ExecutionPolicy The type of the execution policy
+ * \tparam UnaryFunction The type of the unary function
+ * \param[in] policy The execution policy, e.g. host or device
+ * \param[in] size The number of indices, i.e. the upper bound of [0, size)
+ * \param[in] f The unary function to call with an index i
+ */
+template <typename IndexType, typename ExecutionPolicy, typename UnaryFunction>
+void
+for_each_index(ExecutionPolicy&& policy, IndexType size, UnaryFunction f);
+
+/**
+ * \ingroup algorithm
+ * \brief Writes the given value into the given range using the copy assignment operator
+ * \tparam ExecutionPolicy The type of the execution policy
+ * \tparam Iterator The type of the iterators
+ * \tparam T The type of the value
+ * \param[in] policy The execution policy, e.g. host or device
+ * \param[in] begin The iterator pointing to the first element
+ * \param[in] end The iterator pointing past to the last element
+ * \param[in] value The value that will be written
+ */
+template <typename ExecutionPolicy, typename Iterator, typename T>
+void
+fill(ExecutionPolicy&& policy, Iterator begin, Iterator end, const T& value);
+
+/**
+ * \ingroup algorithm
+ * \brief Writes the given value into the given range using the copy assignment operator
+ * \tparam ExecutionPolicy The type of the execution policy
+ * \tparam Iterator The type of the iterators
+ * \tparam Size The size type
+ * \tparam T The type of the value
+ * \param[in] policy The execution policy, e.g. host or device
+ * \param[in] begin The iterator pointing to the first element
+ * \param[in] n The number of elements in the value range
+ * \param[in] value The value that will be written
+ * \return The iterator pointing to the last element
+ */
+template <typename ExecutionPolicy, typename Iterator, typename Size, typename T>
+Iterator
+fill_n(ExecutionPolicy&& policy, Iterator begin, Size n, const T& value);
+
+/**
+ * \ingroup algorithm
+ * \brief Copies all elements of the input range to the output range using the copy assignment operator
+ * \tparam ExecutionPolicy The type of the execution policy
+ * \tparam InputIt The type of the input iterators
+ * \tparam OutputIt The type of the output iterator
+ * \param[in] policy The execution policy, e.g. host or device
+ * \param[in] begin The input iterator pointing to the first element
+ * \param[in] end The input iterator pointing past to the last element
+ * \param[in] output_begin The output iterator pointing to the first element
+ * \return The output iterator pointing to the last element
+ */
+template <typename ExecutionPolicy, typename InputIt, typename OutputIt>
+OutputIt
+copy(ExecutionPolicy&& policy, InputIt begin, InputIt end, OutputIt output_begin);
+
+/**
+ * \ingroup algorithm
+ * \brief Copies all elements of the input range to the output range using the copy assignment operator
+ * \tparam ExecutionPolicy The type of the execution policy
+ * \tparam InputIt The type of the input iterators
+ * \tparam Size The size type
+ * \tparam OutputIt The type of the output iterator
+ * \param[in] policy The execution policy, e.g. host or device
+ * \param[in] begin The input iterator pointing to the first element
+ * \param[in] n The number of elements in the value range
+ * \param[in] output_begin The output iterator pointing to the first element
+ * \return The output iterator pointing to the last element
+ */
+template <typename ExecutionPolicy, typename InputIt, typename Size, typename OutputIt>
+OutputIt
+copy_n(ExecutionPolicy&& policy, InputIt begin, Size n, OutputIt output_begin);
 
 } // namespace stdgpu
 

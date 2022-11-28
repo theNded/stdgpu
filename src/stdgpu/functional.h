@@ -349,7 +349,104 @@ private:
     /**
      * \brief Restrict specializations to enumerations
      */
-    using sfinae = std::enable_if_t<std::is_enum<E>::value, E>;
+    using sfinae = std::enable_if_t<std::is_enum_v<E>, E>;
+};
+
+/**
+ * \ingroup functional
+ * \brief A function to return the given value
+ */
+struct identity
+{
+    /**
+     * \tparam T The type of the value
+     * \brief Returns the given value
+     * \param[in] t A value
+     * \return The given value
+     */
+    template <typename T>
+    STDGPU_HOST_DEVICE T&&
+    operator()(T&& t) const noexcept;
+};
+
+/**
+ * \ingroup functional
+ * \brief A function to add two values
+ * \tparam T The type of the values
+ */
+template <typename T = void>
+struct plus
+{
+    /**
+     * \brief Adds the two values
+     * \param[in] lhs The first value
+     * \param[in] rhs The second value
+     * \return The sum of the given values
+     */
+    STDGPU_HOST_DEVICE T
+    operator()(const T& lhs, const T& rhs) const;
+};
+
+/**
+ * \ingroup functional
+ * \brief A transparent specialization of plus
+ */
+template <>
+struct plus<void>
+{
+    using is_transparent = void; /**< unspecified */
+
+    /**
+     * \brief Adds the two values
+     * \tparam T The class of the first value
+     * \tparam U The class of the second value
+     * \param[in] lhs The first value
+     * \param[in] rhs The second value
+     * \return The sum of the given values
+     */
+    template <typename T, typename U>
+    STDGPU_HOST_DEVICE auto
+    operator()(T&& lhs, U&& rhs) const -> decltype(forward<T>(lhs) + forward<U>(rhs));
+};
+
+/**
+ * \ingroup functional
+ * \brief A function to perform logical AND on two values
+ * \tparam T The type of the values
+ */
+template <typename T = void>
+struct logical_and
+{
+    /**
+     * \brief Performs logical AND on the two values
+     * \param[in] lhs The first value
+     * \param[in] rhs The second value
+     * \return The result of logical AND of the given values
+     */
+    STDGPU_HOST_DEVICE bool
+    operator()(const T& lhs, const T& rhs) const;
+};
+
+/**
+ * \ingroup functional
+ * \brief A transparent specialization of logical_and
+ */
+template <>
+struct logical_and<void>
+{
+    using is_transparent = void; /**< unspecified */
+
+    /**
+     * \brief Performs logical AND on the two values
+     * \tparam T The class of the first value
+     * \tparam U The class of the second value
+     * \param[in] lhs The first value
+     * \param[in] rhs The second value
+     * \return The result of logical AND of the given values
+     */
+    template <typename T, typename U>
+    STDGPU_HOST_DEVICE auto
+    operator()(T&& lhs, U&& rhs) const -> decltype(forward<T>(lhs) && forward<U>(rhs));
 };
 
 /**

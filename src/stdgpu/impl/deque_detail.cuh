@@ -16,11 +16,10 @@
 #ifndef STDGPU_DEQUE_DETAIL_H
 #define STDGPU_DEQUE_DETAIL_H
 
-#include <thrust/sequence.h>
-
 #include <stdgpu/contract.h>
 #include <stdgpu/iterator.h>
 #include <stdgpu/memory.h>
+#include <stdgpu/numeric.h>
 #include <stdgpu/utility.h>
 
 namespace stdgpu
@@ -87,7 +86,7 @@ inline deque<T, Allocator>::deque(const mutex_array<mutex_default_type, mutex_ar
 
 template <typename T, typename Allocator>
 inline STDGPU_HOST_DEVICE typename deque<T, Allocator>::allocator_type
-deque<T, Allocator>::get_allocator() const
+deque<T, Allocator>::get_allocator() const noexcept
 {
     return _allocator;
 }
@@ -213,11 +212,11 @@ deque<T, Allocator>::push_back(const T& element)
 }
 
 template <typename T, typename Allocator>
-inline STDGPU_DEVICE_ONLY thrust::pair<T, bool>
+inline STDGPU_DEVICE_ONLY pair<T, bool>
 deque<T, Allocator>::pop_back()
 {
     // Value if no element will be popped, i.e. undefined behavior for element of type T
-    thrust::pair<T, bool> popped = thrust::make_pair(_data[0], false);
+    pair<T, bool> popped(_data[0], false);
 
     // Preemptive check
     if (empty())
@@ -326,11 +325,11 @@ deque<T, Allocator>::push_front(const T& element)
 }
 
 template <typename T, typename Allocator>
-inline STDGPU_DEVICE_ONLY thrust::pair<T, bool>
+inline STDGPU_DEVICE_ONLY pair<T, bool>
 deque<T, Allocator>::pop_front()
 {
     // Value if no element will be popped, i.e. undefined behavior for element of type T
-    thrust::pair<T, bool> popped = thrust::make_pair(_data[0], false);
+    pair<T, bool> popped(_data[0], false);
 
     // Preemptive check
     if (empty())
@@ -422,14 +421,14 @@ deque<T, Allocator>::size() const
 
 template <typename T, typename Allocator>
 inline STDGPU_HOST_DEVICE index_t
-deque<T, Allocator>::max_size() const
+deque<T, Allocator>::max_size() const noexcept
 {
     return capacity();
 }
 
 template <typename T, typename Allocator>
 inline STDGPU_HOST_DEVICE index_t
-deque<T, Allocator>::capacity() const
+deque<T, Allocator>::capacity() const noexcept
 {
     return _occupied.size();
 }
@@ -443,14 +442,14 @@ deque<T, Allocator>::shrink_to_fit()
 
 template <typename T, typename Allocator>
 inline const T*
-deque<T, Allocator>::data() const
+deque<T, Allocator>::data() const noexcept
 {
     return _data;
 }
 
 template <typename T, typename Allocator>
 inline T*
-deque<T, Allocator>::data()
+deque<T, Allocator>::data() noexcept
 {
     return _data;
 }
@@ -472,18 +471,18 @@ deque<T, Allocator>::clear()
         // Full, i.e. one large block and begin == end
         if (full())
         {
-            stdgpu::detail::unoptimized_destroy(stdgpu::device_begin(_data), stdgpu::device_end(_data));
+            detail::unoptimized_destroy(execution::device, device_begin(_data), device_end(_data));
         }
         // One large block
         else if (begin <= end)
         {
-            stdgpu::detail::unoptimized_destroy(stdgpu::make_device(_data + begin), stdgpu::make_device(_data + end));
+            detail::unoptimized_destroy(execution::device, make_device(_data + begin), make_device(_data + end));
         }
         // Two disconnected blocks
         else
         {
-            stdgpu::detail::unoptimized_destroy(stdgpu::device_begin(_data), stdgpu::make_device(_data + end));
-            stdgpu::detail::unoptimized_destroy(stdgpu::make_device(_data + begin), stdgpu::device_end(_data));
+            detail::unoptimized_destroy(execution::device, device_begin(_data), make_device(_data + end));
+            detail::unoptimized_destroy(execution::device, make_device(_data + begin), device_end(_data));
         }
     }
 
@@ -521,22 +520,21 @@ deque<T, Allocator>::device_range()
     // Full, i.e. one large block and begin == end
     if (full())
     {
-        thrust::sequence(stdgpu::device_begin(_range_indices), stdgpu::device_end(_range_indices), 0);
+        iota(execution::device, device_begin(_range_indices), device_end(_range_indices), 0);
     }
     // One large block, including empty block
     else if (begin <= end)
     {
-        thrust::sequence(stdgpu::device_begin(_range_indices),
-                         stdgpu::device_begin(_range_indices) + (end - begin),
-                         begin);
+        iota(execution::device, device_begin(_range_indices), device_begin(_range_indices) + (end - begin), begin);
     }
     // Two disconnected blocks
     else
     {
-        thrust::sequence(stdgpu::device_begin(_range_indices), stdgpu::device_begin(_range_indices) + end, 0);
-        thrust::sequence(stdgpu::device_begin(_range_indices) + end,
-                         stdgpu::device_begin(_range_indices) + (end + capacity() - begin),
-                         begin);
+        iota(execution::device, device_begin(_range_indices), device_begin(_range_indices) + end, 0);
+        iota(execution::device,
+             device_begin(_range_indices) + end,
+             device_begin(_range_indices) + (end + capacity() - begin),
+             begin);
     }
 
     return device_indexed_range<value_type>(stdgpu::device_range<index_t>(_range_indices, size()), data());
@@ -552,22 +550,21 @@ deque<T, Allocator>::device_range() const
     // Full, i.e. one large block and begin == end
     if (full())
     {
-        thrust::sequence(stdgpu::device_begin(_range_indices), stdgpu::device_end(_range_indices), 0);
+        iota(execution::device, device_begin(_range_indices), device_end(_range_indices), 0);
     }
     // One large block, including empty block
     else if (begin <= end)
     {
-        thrust::sequence(stdgpu::device_begin(_range_indices),
-                         stdgpu::device_begin(_range_indices) + (end - begin),
-                         begin);
+        iota(execution::device, device_begin(_range_indices), device_begin(_range_indices) + (end - begin), begin);
     }
     // Two disconnected blocks
     else
     {
-        thrust::sequence(stdgpu::device_begin(_range_indices), stdgpu::device_begin(_range_indices) + end, 0);
-        thrust::sequence(stdgpu::device_begin(_range_indices) + end,
-                         stdgpu::device_begin(_range_indices) + (end + capacity() - begin),
-                         begin);
+        iota(execution::device, device_begin(_range_indices), device_begin(_range_indices) + end, 0);
+        iota(execution::device,
+             device_begin(_range_indices) + end,
+             device_begin(_range_indices) + (end + capacity() - begin),
+             begin);
     }
 
     return device_indexed_range<const value_type>(stdgpu::device_range<index_t>(_range_indices, size()), data());

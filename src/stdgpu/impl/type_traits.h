@@ -17,11 +17,11 @@
 #define STDGPU_TYPE_TRAITS_H
 
 #include <type_traits>
+#include <utility>
 
-namespace stdgpu
-{
+#include <stdgpu/impl/preprocessor.h>
 
-namespace detail
+namespace stdgpu::detail
 {
 
 /**
@@ -40,15 +40,6 @@ namespace detail
 #define STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(...)                                                                      \
     typename stdgpu_DummyType, std::enable_if_t<__VA_ARGS__, stdgpu_DummyType>*
 
-template <typename... Types>
-struct void_helper
-{
-    using type = void;
-};
-
-template <typename... Types>
-using void_t = typename void_helper<Types...>::type;
-
 #define STDGPU_DETAIL_DEFINE_TRAIT(name, ...)                                                                          \
     template <typename T, typename = void>                                                                             \
     struct name : std::false_type                                                                                      \
@@ -56,9 +47,12 @@ using void_t = typename void_helper<Types...>::type;
     };                                                                                                                 \
                                                                                                                        \
     template <typename T>                                                                                              \
-    struct name<T, void_t<__VA_ARGS__>> : std::true_type                                                               \
+    struct name<T, std::void_t<__VA_ARGS__>> : std::true_type                                                          \
     {                                                                                                                  \
-    };
+    };                                                                                                                 \
+                                                                                                                       \
+    template <typename T>                                                                                              \
+    inline constexpr bool STDGPU_DETAIL_CAT2(name, _v) = name<T>::value;
 
 // Clang does not detect T::pointer for thrust::device_pointer, so avoid checking it
 STDGPU_DETAIL_DEFINE_TRAIT(is_iterator,
@@ -71,8 +65,20 @@ STDGPU_DETAIL_DEFINE_TRAIT(is_transparent, typename T::is_transparent)
 
 STDGPU_DETAIL_DEFINE_TRAIT(is_base, typename T::is_base)
 
-} // namespace detail
+STDGPU_DETAIL_DEFINE_TRAIT(has_get, decltype(std::declval<T>().get()))
+STDGPU_DETAIL_DEFINE_TRAIT(has_arrow_operator,
+                           decltype(std::declval<T>()
+                                            .
+                                            operator->()))
 
-} // namespace stdgpu
+template <typename T>
+struct dependent_false : std::false_type
+{
+};
+
+template <typename T>
+inline constexpr bool dependent_false_v = dependent_false<T>::value;
+
+} // namespace stdgpu::detail
 
 #endif // STDGPU_TYPE_TRAITS_H

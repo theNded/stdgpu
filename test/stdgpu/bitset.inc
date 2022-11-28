@@ -18,12 +18,9 @@
 #include <algorithm>
 #include <limits>
 #include <random>
-#include <thrust/functional.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/logical.h>
-#include <thrust/transform.h>
 #include <unordered_set>
 
+#include <stdgpu/algorithm.h>
 #include <stdgpu/bitset.cuh>
 #include <stdgpu/iterator.h>
 #include <stdgpu/memory.h>
@@ -47,8 +44,10 @@ protected:
         stdgpu::bitset<>::destroyDeviceObject(bitset);
     }
 
-    const stdgpu::index_t bitset_size = 1048576; // NOLINT(misc-non-private-member-variables-in-classes)
-    stdgpu::bitset<> bitset = {};                // NOLINT(misc-non-private-member-variables-in-classes)
+    // NOLINTNEXTLINE(misc-non-private-member-variables-in-classes,cppcoreguidelines-non-private-member-variables-in-classes)
+    const stdgpu::index_t bitset_size = 1048576;
+    // NOLINTNEXTLINE(misc-non-private-member-variables-in-classes,cppcoreguidelines-non-private-member-variables-in-classes)
+    stdgpu::bitset<> bitset = {};
 };
 
 TEST_F(stdgpu_bitset, empty_container)
@@ -74,54 +73,59 @@ TEST_F(stdgpu_bitset, default_values)
 class set_all_bits
 {
 public:
-    explicit set_all_bits(const stdgpu::bitset<>& bitset)
+    set_all_bits(const stdgpu::bitset<>& bitset, std::uint8_t* set)
       : _bitset(bitset)
+      , _set(set)
     {
     }
 
-    STDGPU_DEVICE_ONLY bool
+    STDGPU_DEVICE_ONLY void
     operator()(const stdgpu::index_t i)
     {
         _bitset.set(i);
 
         // Test both access operators at the same time
-        return _bitset[i] && _bitset.test(i);
+        _set[i] = static_cast<std::uint8_t>(_bitset[i] && _bitset.test(i));
     }
 
 private:
     stdgpu::bitset<> _bitset;
+    std::uint8_t* _set;
 };
 
 class reset_all_bits
 {
 public:
-    explicit reset_all_bits(const stdgpu::bitset<>& bitset)
+    reset_all_bits(const stdgpu::bitset<>& bitset, std::uint8_t* set)
       : _bitset(bitset)
+      , _set(set)
     {
     }
 
-    STDGPU_DEVICE_ONLY bool
+    STDGPU_DEVICE_ONLY void
     operator()(const stdgpu::index_t i)
     {
         _bitset.reset(i);
 
         // Test both access operators at the same time
-        return _bitset[i] && _bitset.test(i);
+        _set[i] = static_cast<std::uint8_t>(_bitset[i] && _bitset.test(i));
     }
 
 private:
     stdgpu::bitset<> _bitset;
+    std::uint8_t* _set;
 };
 
 class set_and_reset_all_bits
 {
 public:
-    explicit set_and_reset_all_bits(const stdgpu::bitset<>& bitset)
+    set_and_reset_all_bits(const stdgpu::bitset<>& bitset, std::uint8_t* set)
       : _bitset(bitset)
+      , _set(set)
     {
     }
 
-    STDGPU_DEVICE_ONLY bool
+    STDGPU_DEVICE_ONLY void
     operator()(const stdgpu::index_t i)
     {
         _bitset.set(i);
@@ -132,42 +136,42 @@ public:
         }
 
         // Test both access operators at the same time
-        return _bitset[i] && _bitset.test(i);
+        _set[i] = static_cast<std::uint8_t>(_bitset[i] && _bitset.test(i));
     }
 
 private:
     stdgpu::bitset<> _bitset;
+    std::uint8_t* _set;
 };
 
 class flip_all_bits
 {
 public:
-    explicit flip_all_bits(const stdgpu::bitset<>& bitset)
+    flip_all_bits(const stdgpu::bitset<>& bitset, std::uint8_t* set)
       : _bitset(bitset)
+      , _set(set)
     {
     }
 
-    STDGPU_DEVICE_ONLY bool
+    STDGPU_DEVICE_ONLY void
     operator()(const stdgpu::index_t i)
     {
         _bitset.flip(i);
 
         // Test both access operators at the same time
-        return _bitset[i] && _bitset.test(i);
+        _set[i] = static_cast<std::uint8_t>(_bitset[i] && _bitset.test(i));
     }
 
 private:
     stdgpu::bitset<> _bitset;
+    std::uint8_t* _set;
 };
 
 TEST_F(stdgpu_bitset, set_all_bits_componentwise)
 {
     std::uint8_t* set = createDeviceArray<std::uint8_t>(bitset.size());
 
-    thrust::transform(thrust::counting_iterator<stdgpu::index_t>(0),
-                      thrust::counting_iterator<stdgpu::index_t>(bitset.size()),
-                      stdgpu::device_begin(set),
-                      set_all_bits(bitset));
+    stdgpu::for_each_index(stdgpu::execution::device, bitset.size(), set_all_bits(bitset, set));
 
     ASSERT_EQ(bitset.count(), bitset.size());
 
@@ -186,17 +190,11 @@ TEST_F(stdgpu_bitset, reset_all_bits_componentwise)
 {
     std::uint8_t* set = createDeviceArray<std::uint8_t>(bitset.size());
 
-    thrust::transform(thrust::counting_iterator<stdgpu::index_t>(0),
-                      thrust::counting_iterator<stdgpu::index_t>(bitset.size()),
-                      stdgpu::device_begin(set),
-                      set_all_bits(bitset));
+    stdgpu::for_each_index(stdgpu::execution::device, bitset.size(), set_all_bits(bitset, set));
 
     ASSERT_EQ(bitset.count(), bitset.size());
 
-    thrust::transform(thrust::counting_iterator<stdgpu::index_t>(0),
-                      thrust::counting_iterator<stdgpu::index_t>(bitset.size()),
-                      stdgpu::device_begin(set),
-                      reset_all_bits(bitset));
+    stdgpu::for_each_index(stdgpu::execution::device, bitset.size(), reset_all_bits(bitset, set));
 
     ASSERT_EQ(bitset.count(), 0);
 
@@ -215,10 +213,7 @@ TEST_F(stdgpu_bitset, set_and_reset_all_bits_componentwise)
 {
     std::uint8_t* set = createDeviceArray<std::uint8_t>(bitset.size());
 
-    thrust::transform(thrust::counting_iterator<stdgpu::index_t>(0),
-                      thrust::counting_iterator<stdgpu::index_t>(bitset.size()),
-                      stdgpu::device_begin(set),
-                      set_and_reset_all_bits(bitset));
+    stdgpu::for_each_index(stdgpu::execution::device, bitset.size(), set_and_reset_all_bits(bitset, set));
 
     ASSERT_EQ(bitset.count(), 0);
 
@@ -240,10 +235,7 @@ TEST_F(stdgpu_bitset, flip_all_bits_previously_reset_componentwise)
     // Previously reset
     bitset.reset();
 
-    thrust::transform(thrust::counting_iterator<stdgpu::index_t>(0),
-                      thrust::counting_iterator<stdgpu::index_t>(bitset.size()),
-                      stdgpu::device_begin(set),
-                      flip_all_bits(bitset));
+    stdgpu::for_each_index(stdgpu::execution::device, bitset.size(), flip_all_bits(bitset, set));
 
     ASSERT_EQ(bitset.count(), bitset.size());
 
@@ -265,10 +257,7 @@ TEST_F(stdgpu_bitset, flip_all_bits_previously_set_componentwise)
     // Previously set
     bitset.set();
 
-    thrust::transform(thrust::counting_iterator<stdgpu::index_t>(0),
-                      thrust::counting_iterator<stdgpu::index_t>(bitset.size()),
-                      stdgpu::device_begin(set),
-                      flip_all_bits(bitset));
+    stdgpu::for_each_index(stdgpu::execution::device, bitset.size(), flip_all_bits(bitset, set));
 
     ASSERT_EQ(bitset.count(), 0);
 
@@ -286,20 +275,22 @@ TEST_F(stdgpu_bitset, flip_all_bits_previously_set_componentwise)
 class read_all_bits
 {
 public:
-    explicit read_all_bits(const stdgpu::bitset<>& bitset)
+    read_all_bits(const stdgpu::bitset<>& bitset, std::uint8_t* set)
       : _bitset(bitset)
+      , _set(set)
     {
     }
 
-    STDGPU_DEVICE_ONLY bool
+    STDGPU_DEVICE_ONLY void
     operator()(const stdgpu::index_t i)
     {
         // Test both access operators at the same time
-        return _bitset[i] && _bitset.test(i);
+        _set[i] = static_cast<std::uint8_t>(_bitset[i] && _bitset.test(i));
     }
 
 private:
     stdgpu::bitset<> _bitset;
+    std::uint8_t* _set;
 };
 
 TEST_F(stdgpu_bitset, set_all_bits)
@@ -308,10 +299,7 @@ TEST_F(stdgpu_bitset, set_all_bits)
 
     bitset.set();
 
-    thrust::transform(thrust::counting_iterator<stdgpu::index_t>(0),
-                      thrust::counting_iterator<stdgpu::index_t>(bitset.size()),
-                      stdgpu::device_begin(set),
-                      read_all_bits(bitset));
+    stdgpu::for_each_index(stdgpu::execution::device, bitset.size(), read_all_bits(bitset, set));
 
     ASSERT_EQ(bitset.count(), bitset.size());
 
@@ -336,10 +324,7 @@ TEST_F(stdgpu_bitset, reset_all_bits)
 
     bitset.reset();
 
-    thrust::transform(thrust::counting_iterator<stdgpu::index_t>(0),
-                      thrust::counting_iterator<stdgpu::index_t>(bitset.size()),
-                      stdgpu::device_begin(set),
-                      read_all_bits(bitset));
+    stdgpu::for_each_index(stdgpu::execution::device, bitset.size(), read_all_bits(bitset, set));
 
     ASSERT_EQ(bitset.count(), 0);
 
@@ -363,10 +348,7 @@ TEST_F(stdgpu_bitset, flip_all_bits_previously_reset)
 
     bitset.flip();
 
-    thrust::transform(thrust::counting_iterator<stdgpu::index_t>(0),
-                      thrust::counting_iterator<stdgpu::index_t>(bitset.size()),
-                      stdgpu::device_begin(set),
-                      read_all_bits(bitset));
+    stdgpu::for_each_index(stdgpu::execution::device, bitset.size(), read_all_bits(bitset, set));
 
     ASSERT_EQ(bitset.count(), bitset.size());
 
@@ -532,9 +514,7 @@ TEST_F(stdgpu_bitset, set_random_bits)
     stdgpu::index_t* host_random_sequence = generate_shuffled_sequence(bitset.size());
     stdgpu::index_t* random_sequence = copyCreateHost2DeviceArray<stdgpu::index_t>(host_random_sequence, bitset.size());
 
-    thrust::for_each(thrust::counting_iterator<stdgpu::index_t>(0),
-                     thrust::counting_iterator<stdgpu::index_t>(N),
-                     set_bits(bitset, random_sequence, set));
+    stdgpu::for_each_index(stdgpu::execution::device, N, set_bits(bitset, random_sequence, set));
 
     ASSERT_EQ(bitset.count(), N);
 
@@ -568,15 +548,11 @@ TEST_F(stdgpu_bitset, reset_random_bits)
     stdgpu::index_t* host_random_sequence = generate_shuffled_sequence(bitset.size());
     stdgpu::index_t* random_sequence = copyCreateHost2DeviceArray<stdgpu::index_t>(host_random_sequence, bitset.size());
 
-    thrust::for_each(thrust::counting_iterator<stdgpu::index_t>(0),
-                     thrust::counting_iterator<stdgpu::index_t>(N),
-                     set_bits(bitset, random_sequence, set));
+    stdgpu::for_each_index(stdgpu::execution::device, N, set_bits(bitset, random_sequence, set));
 
     ASSERT_EQ(bitset.count(), N);
 
-    thrust::for_each(thrust::counting_iterator<stdgpu::index_t>(0),
-                     thrust::counting_iterator<stdgpu::index_t>(N),
-                     reset_bits(bitset, random_sequence, set));
+    stdgpu::for_each_index(stdgpu::execution::device, N, reset_bits(bitset, random_sequence, set));
 
     ASSERT_EQ(bitset.count(), 0);
 
@@ -602,9 +578,7 @@ TEST_F(stdgpu_bitset, set_and_reset_random_bits)
     stdgpu::index_t* host_random_sequence = generate_shuffled_sequence(bitset.size());
     stdgpu::index_t* random_sequence = copyCreateHost2DeviceArray<stdgpu::index_t>(host_random_sequence, bitset.size());
 
-    thrust::for_each(thrust::counting_iterator<stdgpu::index_t>(0),
-                     thrust::counting_iterator<stdgpu::index_t>(N),
-                     set_and_reset_bits(bitset, random_sequence, set));
+    stdgpu::for_each_index(stdgpu::execution::device, N, set_and_reset_bits(bitset, random_sequence, set));
 
     ASSERT_EQ(bitset.count(), 0);
 
@@ -635,9 +609,7 @@ TEST_F(stdgpu_bitset, flip_random_bits_previously_reset)
     stdgpu::index_t* host_random_sequence = generate_shuffled_sequence(bitset.size());
     stdgpu::index_t* random_sequence = copyCreateHost2DeviceArray<stdgpu::index_t>(host_random_sequence, bitset.size());
 
-    thrust::for_each(thrust::counting_iterator<stdgpu::index_t>(0),
-                     thrust::counting_iterator<stdgpu::index_t>(N),
-                     flip_bits(bitset, random_sequence, set));
+    stdgpu::for_each_index(stdgpu::execution::device, N, flip_bits(bitset, random_sequence, set));
 
     ASSERT_EQ(bitset.count(), N);
 
@@ -676,9 +648,7 @@ TEST_F(stdgpu_bitset, flip_random_bits_previously_set)
     stdgpu::index_t* host_random_sequence = generate_shuffled_sequence(bitset.size());
     stdgpu::index_t* random_sequence = copyCreateHost2DeviceArray<stdgpu::index_t>(host_random_sequence, bitset.size());
 
-    thrust::for_each(thrust::counting_iterator<stdgpu::index_t>(0),
-                     thrust::counting_iterator<stdgpu::index_t>(N),
-                     flip_bits(bitset, random_sequence, set));
+    stdgpu::for_each_index(stdgpu::execution::device, N, flip_bits(bitset, random_sequence, set));
 
     ASSERT_EQ(bitset.count(), bitset.size() - N);
 

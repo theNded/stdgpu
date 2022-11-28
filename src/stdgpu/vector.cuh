@@ -28,10 +28,7 @@
  * \file stdgpu/vector.cuh
  */
 
-#include <thrust/pair.h>
-
 #include <stdgpu/atomic.cuh>
-#include <stdgpu/attribute.h>
 #include <stdgpu/bitset.cuh>
 #include <stdgpu/cstddef.h>
 #include <stdgpu/impl/type_traits.h>
@@ -40,6 +37,7 @@
 #include <stdgpu/mutex.cuh>
 #include <stdgpu/platform.h>
 #include <stdgpu/ranges.h>
+#include <stdgpu/utility.h>
 
 ///////////////////////////////////////////////////////////
 
@@ -53,14 +51,15 @@ namespace stdgpu
 namespace detail
 {
 
-template <typename T, typename Allocator, bool>
+template <typename T, typename Allocator, typename ValueIterator, bool>
 class vector_insert;
 
 template <typename T, typename Allocator, bool>
 class vector_erase;
 
 template <typename T, typename Allocator>
-class vector_clear_fill;
+void
+vector_clear_iota(vector<T, Allocator>& v, const T& value);
 
 } // namespace detail
 
@@ -95,7 +94,7 @@ public:
     using pointer = value_type*;               /**< value_type* */
     using const_pointer = const value_type*;   /**< const value_type* */
 
-    static_assert(!std::is_same<T, bool>::value, "std::vector<bool> specialization not provided");
+    static_assert(!std::is_same_v<T, bool>, "std::vector<bool> specialization not provided");
 
     /**
      * \brief Creates an object of this class on the GPU (device)
@@ -124,7 +123,7 @@ public:
      * \return The container allocator
      */
     STDGPU_HOST_DEVICE allocator_type
-    get_allocator() const;
+    get_allocator() const noexcept;
 
     /**
      * \brief Reads the value at position n
@@ -211,7 +210,7 @@ public:
      * \brief Removes and returns the current element from end of the object
      * \return The currently popped element and true if not empty, an empty element T() and false otherwise
      */
-    STDGPU_DEVICE_ONLY thrust::pair<T, bool>
+    STDGPU_DEVICE_ONLY pair<T, bool>
     pop_back();
 
     /**
@@ -221,7 +220,7 @@ public:
      * \param[in] end The end of the range
      * \note position must be equal to device_end()
      */
-    template <typename ValueIterator, STDGPU_DETAIL_OVERLOAD_IF(detail::is_iterator<ValueIterator>::value)>
+    template <typename ValueIterator, STDGPU_DETAIL_OVERLOAD_IF(detail::is_iterator_v<ValueIterator>)>
     void
     insert(device_ptr<const T> position, ValueIterator begin, ValueIterator end);
 
@@ -238,7 +237,7 @@ public:
      * \brief Checks if the object is empty
      * \return True if the object is empty, false otherwise
      */
-    STDGPU_NODISCARD STDGPU_HOST_DEVICE bool
+    [[nodiscard]] STDGPU_HOST_DEVICE bool
     empty() const;
 
     /**
@@ -260,14 +259,14 @@ public:
      * \return The maximal size
      */
     STDGPU_HOST_DEVICE index_t
-    max_size() const;
+    max_size() const noexcept;
 
     /**
      * \brief Returns the capacity
      * \return The capacity
      */
     STDGPU_HOST_DEVICE index_t
-    capacity() const;
+    capacity() const noexcept;
 
     /**
      * \brief Requests to shrink the capacity to the current size
@@ -281,14 +280,14 @@ public:
      * \return The underlying array
      */
     const T*
-    data() const;
+    data() const noexcept;
 
     /**
      * \brief Returns a pointer to the underlying data
      * \return The underlying array
      */
     T*
-    data();
+    data() noexcept;
 
     /**
      * \brief Clears the complete object
@@ -360,14 +359,14 @@ public:
     device_range() const;
 
 private:
-    template <typename T2, typename Allocator2, bool>
+    template <typename T2, typename Allocator2, typename ValueIterator2, bool>
     friend class detail::vector_insert;
 
     template <typename T2, typename Allocator2, bool>
     friend class detail::vector_erase;
 
-    template <typename T2, typename Allocator2>
-    friend class detail::vector_clear_fill;
+    friend void
+    detail::vector_clear_iota<T, Allocator>(vector<T, Allocator>& v, const T& value);
 
     STDGPU_DEVICE_ONLY bool
     occupied(const index_t n) const;

@@ -16,9 +16,6 @@
 #ifndef STDGPU_MUTEX_DETAIL_H
 #define STDGPU_MUTEX_DETAIL_H
 
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/logical.h>
-
 #include <stdgpu/contract.h>
 
 namespace stdgpu
@@ -79,7 +76,7 @@ inline mutex_array<Block, Allocator>::mutex_array(const bitset<Block, Allocator>
 
 template <typename Block, typename Allocator>
 inline STDGPU_HOST_DEVICE typename mutex_array<Block, Allocator>::allocator_type
-mutex_array<Block, Allocator>::get_allocator() const
+mutex_array<Block, Allocator>::get_allocator() const noexcept
 {
     return _lock_bits.get_allocator();
 }
@@ -103,54 +100,23 @@ mutex_array<Block, Allocator>::operator[](const index_t n) const
 
 template <typename Block, typename Allocator>
 inline STDGPU_HOST_DEVICE bool
-mutex_array<Block, Allocator>::empty() const
+mutex_array<Block, Allocator>::empty() const noexcept
 {
     return (size() == 0);
 }
 
 template <typename Block, typename Allocator>
 inline STDGPU_HOST_DEVICE index_t
-mutex_array<Block, Allocator>::size() const
+mutex_array<Block, Allocator>::size() const noexcept
 {
     return _lock_bits.size();
 }
-
-namespace detail
-{
-
-template <typename Block, typename Allocator>
-class unlocked
-{
-public:
-    inline explicit unlocked(const mutex_array<Block, Allocator>& lock_bits)
-      : _lock_bits(lock_bits)
-    {
-    }
-
-    inline STDGPU_DEVICE_ONLY bool
-    operator()(const index_t i) const
-    {
-        return !(_lock_bits[i].locked());
-    }
-
-private:
-    mutex_array<Block, Allocator> _lock_bits;
-};
-
-} // namespace detail
 
 template <typename Block, typename Allocator>
 inline bool
 mutex_array<Block, Allocator>::valid() const
 {
-    if (empty())
-    {
-        return true;
-    }
-
-    return thrust::all_of(thrust::counting_iterator<index_t>(0),
-                          thrust::counting_iterator<index_t>(size()),
-                          detail::unlocked<Block, Allocator>(*this));
+    return _lock_bits.count() == 0;
 }
 
 namespace detail

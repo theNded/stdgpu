@@ -29,9 +29,12 @@
 #include <memory>
 #include <type_traits>
 
-#include <stdgpu/attribute.h>
+// For convenient calls of all policy-based algorithms
+#include <stdgpu/execution.h>
+
 #include <stdgpu/config.h>
 #include <stdgpu/cstddef.h>
+#include <stdgpu/impl/type_traits.h>
 #include <stdgpu/platform.h>
 
 /**
@@ -462,12 +465,17 @@ struct safe_device_allocator
     /**
      * \brief Default constructor
      */
-    safe_device_allocator() = default;
+    safe_device_allocator() noexcept = default;
+
+    /**
+     * \brief Default destructor
+     */
+    ~safe_device_allocator() noexcept = default;
 
     /**
      * \brief Copy constructor
      */
-    safe_device_allocator(const safe_device_allocator&) = default;
+    safe_device_allocator(const safe_device_allocator&) noexcept = default;
 
     /**
      * \brief Copy constructor
@@ -475,21 +483,33 @@ struct safe_device_allocator
      * \param[in] other The allocator to be copied from
      */
     template <typename U>
-    explicit safe_device_allocator(const safe_device_allocator<U>& other);
+    explicit safe_device_allocator(const safe_device_allocator<U>& other) noexcept;
 
     /**
      * \brief Copy assignment operator
      * \return *this
      */
     safe_device_allocator&
-    operator=(const safe_device_allocator&) = default;
+    operator=(const safe_device_allocator&) noexcept = default;
+
+    /**
+     * \brief Move constructor
+     */
+    safe_device_allocator(safe_device_allocator&&) noexcept = default;
+
+    /**
+     * \brief Move assignment operator
+     * \return *this
+     */
+    safe_device_allocator&
+    operator=(safe_device_allocator&&) noexcept = default;
 
     /**
      * \brief Allocates a memory block of the given size
      * \param[in] n The size of the memory block in bytes
      * \return A pointer to the allocated memory block
      */
-    STDGPU_NODISCARD T*
+    [[nodiscard]] T*
     allocate(index64_t n);
 
     /**
@@ -519,12 +539,17 @@ struct safe_host_allocator
     /**
      * \brief Default constructor
      */
-    safe_host_allocator() = default;
+    safe_host_allocator() noexcept = default;
+
+    /**
+     * \brief Default destructor
+     */
+    ~safe_host_allocator() noexcept = default;
 
     /**
      * \brief Copy constructor
      */
-    safe_host_allocator(const safe_host_allocator&) = default;
+    safe_host_allocator(const safe_host_allocator&) noexcept = default;
 
     /**
      * \brief Copy constructor
@@ -532,21 +557,33 @@ struct safe_host_allocator
      * \param[in] other The allocator to be copied from
      */
     template <typename U>
-    explicit safe_host_allocator(const safe_host_allocator<U>& other);
+    explicit safe_host_allocator(const safe_host_allocator<U>& other) noexcept;
 
     /**
      * \brief Copy assignment operator
      * \return *this
      */
     safe_host_allocator&
-    operator=(const safe_host_allocator&) = default;
+    operator=(const safe_host_allocator&) noexcept = default;
+
+    /**
+     * \brief Move constructor
+     */
+    safe_host_allocator(safe_host_allocator&&) noexcept = default;
+
+    /**
+     * \brief Move assignment operator
+     * \return *this
+     */
+    safe_host_allocator&
+    operator=(safe_host_allocator&&) noexcept = default;
 
     /**
      * \brief Allocates a memory block of the given size
      * \param[in] n The size of the memory block in bytes
      * \return A pointer to the allocated memory block
      */
-    STDGPU_NODISCARD T*
+    [[nodiscard]] T*
     allocate(index64_t n);
 
     /**
@@ -576,12 +613,17 @@ struct safe_managed_allocator
     /**
      * \brief Default constructor
      */
-    safe_managed_allocator() = default;
+    safe_managed_allocator() noexcept = default;
+
+    /**
+     * \brief Default destructor
+     */
+    ~safe_managed_allocator() noexcept = default;
 
     /**
      * \brief Copy constructor
      */
-    safe_managed_allocator(const safe_managed_allocator&) = default;
+    safe_managed_allocator(const safe_managed_allocator&) noexcept = default;
 
     /**
      * \brief Copy constructor
@@ -589,21 +631,33 @@ struct safe_managed_allocator
      * \param[in] other The allocator to be copied from
      */
     template <typename U>
-    explicit safe_managed_allocator(const safe_managed_allocator<U>& other);
+    explicit safe_managed_allocator(const safe_managed_allocator<U>& other) noexcept;
 
     /**
      * \brief Copy assignment operator
      * \return *this
      */
     safe_managed_allocator&
-    operator=(const safe_managed_allocator&) = default;
+    operator=(const safe_managed_allocator&) noexcept = default;
+
+    /**
+     * \brief Move constructor
+     */
+    safe_managed_allocator(safe_managed_allocator&&) noexcept = default;
+
+    /**
+     * \brief Move assignment operator
+     * \return *this
+     */
+    safe_managed_allocator&
+    operator=(safe_managed_allocator&&) noexcept = default;
 
     /**
      * \brief Allocates a memory block of the given size
      * \param[in] n The size of the memory block in bytes
      * \return A pointer to the allocated memory block
      */
-    STDGPU_NODISCARD T*
+    [[nodiscard]] T*
     allocate(index64_t n);
 
     /**
@@ -663,7 +717,7 @@ struct allocator_traits : public detail::allocator_traits_base<Allocator>
      * \param[in] n The size of the memory block in bytes
      * \return A pointer to the allocated memory block
      */
-    STDGPU_NODISCARD static pointer
+    [[nodiscard]] static pointer
     allocate(Allocator& a, index_type n);
 
     /**
@@ -673,7 +727,7 @@ struct allocator_traits : public detail::allocator_traits_base<Allocator>
      * \param[in] hint A pointer serving as a hint for the allocator
      * \return A pointer to the allocated memory block
      */
-    STDGPU_NODISCARD static pointer
+    [[nodiscard]] static pointer
     allocate(Allocator& a, index_type n, const_void_pointer hint);
 
     /**
@@ -713,7 +767,7 @@ struct allocator_traits : public detail::allocator_traits_base<Allocator>
      * \return The maximum size that could be theoretically allocated
      */
     static STDGPU_HOST_DEVICE index_type
-    max_size(const Allocator& a);
+    max_size(const Allocator& a) noexcept;
 
     /**
      * \brief Returns a copy of the allocator
@@ -723,6 +777,34 @@ struct allocator_traits : public detail::allocator_traits_base<Allocator>
     static Allocator
     select_on_container_copy_construction(const Allocator& a);
 };
+
+/**
+ * \ingroup memory
+ * \brief Converts a potential fancy pointer to a raw pointer
+ * \tparam T The raw pointer type
+ * \param[in] p A raw pointer
+ * \return The given raw pointer as provided
+ */
+template <typename T>
+STDGPU_HOST_DEVICE T*
+to_address(T* p) noexcept;
+
+/**
+ * \ingroup memory
+ * \brief Converts a potential fancy pointer to a raw pointer
+ * \tparam Ptr The fancy pointer type
+ * \param[in] p A fancy pointer
+ * \return The raw pointer held by the fancy pointer obtained via operator->()
+ */
+template <typename Ptr, STDGPU_DETAIL_OVERLOAD_IF(detail::has_arrow_operator_v<Ptr>)>
+STDGPU_HOST_DEVICE auto
+to_address(const Ptr& p) noexcept;
+
+//! @cond Doxygen_Suppress
+template <typename Ptr, STDGPU_DETAIL_OVERLOAD_IF(!detail::has_arrow_operator_v<Ptr> && detail::has_get_v<Ptr>)>
+STDGPU_HOST_DEVICE auto
+to_address(const Ptr& p) noexcept;
+//! @endcond
 
 /**
  * \ingroup memory
@@ -749,27 +831,96 @@ destroy_at(T* p);
 
 /**
  * \ingroup memory
- * \brief Destroys the range of values
- * \tparam Iterator The iterator type of the values
- * \param[in] first An iterator to the begin of the value range
- * \param[in] last An iterator to the end of the value range
+ * \brief Writes the given value to into the given range using the copy constructor
+ * \tparam ExecutionPolicy The type of the execution policy
+ * \tparam Iterator The type of the iterators
+ * \tparam T The type of the value
+ * \param[in] policy The execution policy, e.g. host or device
+ * \param[in] begin The iterator pointing to the first element
+ * \param[in] end The iterator pointing past to the last element
+ * \param[in] value The value that will be written
  */
-template <typename Iterator>
+template <typename ExecutionPolicy, typename Iterator, typename T>
 void
-destroy(Iterator first, Iterator last);
+uninitialized_fill(ExecutionPolicy&& policy, Iterator begin, Iterator end, const T& value);
+
+/**
+ * \ingroup memory
+ * \brief Writes the given value to into the given range using the copy constructor
+ * \tparam ExecutionPolicy The type of the execution policy
+ * \tparam Iterator The type of the iterators
+ * \tparam Size The size type
+ * \tparam T The type of the value
+ * \param[in] policy The execution policy, e.g. host or device
+ * \param[in] begin The iterator pointing to the first element
+ * \param[in] n The number of elements in the value range
+ * \param[in] value The value that will be written
+ * \return The iterator pointing to the last element
+ */
+template <typename ExecutionPolicy, typename Iterator, typename Size, typename T>
+Iterator
+uninitialized_fill_n(ExecutionPolicy&& policy, Iterator begin, Size n, const T& value);
+
+/**
+ * \ingroup memory
+ * \brief Copies all elements of the input range to the output range using the copy constructor
+ * \tparam ExecutionPolicy The type of the execution policy
+ * \tparam InputIt The type of the input iterators
+ * \tparam OutputIt The type of the output iterator
+ * \param[in] policy The execution policy, e.g. host or device
+ * \param[in] begin The input iterator pointing to the first element
+ * \param[in] end The input iterator pointing past to the last element
+ * \param[in] output_begin The output iterator pointing to the first element
+ * \return The output iterator pointing to the last element
+ */
+template <typename ExecutionPolicy, typename InputIt, typename OutputIt>
+OutputIt
+uninitialized_copy(ExecutionPolicy&& policy, InputIt begin, InputIt end, OutputIt output_begin);
+
+/**
+ * \ingroup memory
+ * \brief Copies all elements of the input range to the output range using the copy constructor
+ * \tparam ExecutionPolicy The type of the execution policy
+ * \tparam InputIt The type of the input iterators
+ * \tparam Size The size type
+ * \tparam OutputIt The type of the output iterator
+ * \param[in] policy The execution policy, e.g. host or device
+ * \param[in] begin The input iterator pointing to the first element
+ * \param[in] n The number of elements in the value range
+ * \param[in] output_begin The output iterator pointing to the first element
+ * \return The output iterator pointing to the last element
+ */
+template <typename ExecutionPolicy, typename InputIt, typename Size, typename OutputIt>
+OutputIt
+uninitialized_copy_n(ExecutionPolicy&& policy, InputIt begin, Size n, OutputIt output_begin);
 
 /**
  * \ingroup memory
  * \brief Destroys the range of values
+ * \tparam ExecutionPolicy The type of the execution policy
+ * \tparam Iterator The iterator type of the values
+ * \param[in] policy The execution policy, e.g. host or device
+ * \param[in] first An iterator to the begin of the value range
+ * \param[in] last An iterator to the end of the value range
+ */
+template <typename ExecutionPolicy, typename Iterator>
+void
+destroy(ExecutionPolicy&& policy, Iterator first, Iterator last);
+
+/**
+ * \ingroup memory
+ * \brief Destroys the range of values
+ * \tparam ExecutionPolicy The type of the execution policy
  * \tparam Iterator The iterator type of the values
  * \tparam Size The size type
+ * \param[in] policy The execution policy, e.g. host or device
  * \param[in] first An iterator to the begin of the value range
  * \param[in] n The number of elements in the value range
  * \return An iterator to the end of the value range
  */
-template <typename Iterator, typename Size>
+template <typename ExecutionPolicy, typename Iterator, typename Size>
 Iterator
-destroy_n(Iterator first, Size n);
+destroy_n(ExecutionPolicy&& policy, Iterator first, Size n);
 
 /**
  * \ingroup memory

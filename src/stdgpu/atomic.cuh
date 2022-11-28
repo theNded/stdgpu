@@ -64,7 +64,7 @@ enum memory_order
  * \note The synchronization might be stricter than requested
  */
 STDGPU_DEVICE_ONLY void
-atomic_thread_fence(const memory_order order);
+atomic_thread_fence(const memory_order order) noexcept;
 
 /**
  * \ingroup atomic
@@ -73,7 +73,7 @@ atomic_thread_fence(const memory_order order);
  * \note The synchronization might be stricter than requested
  */
 STDGPU_DEVICE_ONLY void
-atomic_signal_fence(const memory_order order);
+atomic_signal_fence(const memory_order order) noexcept;
 
 /**
  * \ingroup atomic
@@ -99,8 +99,8 @@ template <typename T, typename Allocator>
 class atomic
 {
 public:
-    static_assert(std::is_same<T, unsigned int>::value || std::is_same<T, int>::value ||
-                          std::is_same<T, unsigned long long int>::value || std::is_same<T, float>::value,
+    static_assert(std::is_same_v<T, unsigned int> || std::is_same_v<T, int> ||
+                          std::is_same_v<T, unsigned long long int> || std::is_same_v<T, float>,
                   "stdgpu::atomic: No support for type T");
 
     using value_type = T;               /**< T */
@@ -127,21 +127,21 @@ public:
     /**
      * \brief Empty constructor
      */
-    atomic();
+    atomic() noexcept;
 
     /**
      * \brief Returns the container allocator
      * \return The container allocator
      */
     STDGPU_HOST_DEVICE allocator_type
-    get_allocator() const;
+    get_allocator() const noexcept;
 
     /**
      * \brief Checks whether the atomic operations are lock-free
      * \return True if the operations are lock-free, false otherwise
      */
     STDGPU_HOST_DEVICE bool
-    is_lock_free() const;
+    is_lock_free() const noexcept;
 
     /**
      * \brief Atomically loads and returns the current value of the atomic object
@@ -171,7 +171,7 @@ public:
      * \param[in] desired The value to store to the atomic object
      * \return The desired value
      */
-    STDGPU_HOST_DEVICE T // NOLINT(misc-unconventional-assign-operator)
+    STDGPU_HOST_DEVICE T // NOLINT(misc-unconventional-assign-operator,cppcoreguidelines-c-copy-assignment-signature)
     operator=(const T desired);
 
     /**
@@ -181,7 +181,7 @@ public:
      * \return The old value
      */
     STDGPU_DEVICE_ONLY T
-    exchange(const T desired, const memory_order order = memory_order_seq_cst);
+    exchange(const T desired, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically compares the current value with the given value and exchanges it with the desired one in case
@@ -191,7 +191,7 @@ public:
      * \return True if the value has been changed to desired, false otherwise
      */
     STDGPU_DEVICE_ONLY bool
-    compare_exchange_weak(T& expected, const T desired, const memory_order order = memory_order_seq_cst);
+    compare_exchange_weak(T& expected, const T desired, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically compares the current value with the given value and exchanges it with the desired one in case
@@ -201,7 +201,7 @@ public:
      * \return True if the value has been changed to desired, false otherwise
      */
     STDGPU_DEVICE_ONLY bool
-    compare_exchange_strong(T& expected, const T desired, const memory_order order = memory_order_seq_cst);
+    compare_exchange_strong(T& expected, const T desired, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the addition of the stored value and the given argument
@@ -209,9 +209,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_add(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_add(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the subtraction of the stored value and the given argument
@@ -219,9 +219,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_sub(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_sub(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the bitwise AND of the stored value and the given argument
@@ -229,9 +229,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_and(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_and(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the bitwise OR of the stored value and the given argument
@@ -239,9 +239,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_or(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_or(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the bitwise XOR of the stored value and the given argument
@@ -249,9 +249,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_xor(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_xor(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the minimum of the stored value and the given argument
@@ -259,9 +259,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_min(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_min(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the maximum of the stored value and the given argument
@@ -269,9 +269,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_max(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_max(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the incrementation of the value and modulus with arg
@@ -279,9 +279,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_same<T, unsigned int>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_same_v<T, unsigned int>)>
     STDGPU_DEVICE_ONLY T
-    fetch_inc_mod(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_inc_mod(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the decrementation of the value and modulus with arg
@@ -289,89 +289,89 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_same<T, unsigned int>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_same_v<T, unsigned int>)>
     STDGPU_DEVICE_ONLY T
-    fetch_dec_mod(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_dec_mod(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically increments the current value. Equivalent to fetch_add(1) + 1
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator++();
+    operator++() noexcept;
 
     /**
      * \brief Atomically increments the current value. Equivalent to fetch_add(1)
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator++(int);
+    operator++(int) noexcept;
 
     /**
      * \brief Atomically decrements the current value. Equivalent to fetch_sub(1) - 1
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator--();
+    operator--() noexcept;
 
     /**
      * \brief Atomically decrements the current value. Equivalent to fetch_sub(1)
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator--(int);
+    operator--(int) noexcept;
 
     /**
      * \brief Computes the atomic addition with the argument. Equivalent to fetch_add(arg) + arg
      * \param[in] arg The other argument of addition
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator+=(const T arg);
+    operator+=(const T arg) noexcept;
 
     /**
      * \brief Computes the atomic subtraction with the argument. Equivalent to fetch_sub(arg) + arg
      * \param[in] arg The other argument of subtraction
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator-=(const T arg);
+    operator-=(const T arg) noexcept;
 
     /**
      * \brief Computes the atomic bitwise AND with the argument. Equivalent to fetch_and(arg) & arg
      * \param[in] arg The other argument of bitwise AND
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator&=(const T arg);
+    operator&=(const T arg) noexcept;
 
     /**
      * \brief Computes the atomic bitwise OR with the argument. Equivalent to fetch_or(arg) | arg
      * \param[in] arg The other argument of bitwise OR
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator|=(const T arg);
+    operator|=(const T arg) noexcept;
 
     /**
      * \brief Computes the atomic bitwise XOR with the argument. Equivalent to fetch_xor(arg) ^ arg
      * \param[in] arg The other argument of bitwise XOR
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator^=(const T arg);
+    operator^=(const T arg) noexcept;
 
 private:
-    explicit atomic(const Allocator& allocator);
+    explicit atomic(const Allocator& allocator) noexcept;
 
     atomic_ref<T> _value_ref;
     allocator_type _allocator = {};
@@ -402,8 +402,8 @@ template <typename T>
 class atomic_ref
 {
 public:
-    static_assert(std::is_same<T, unsigned int>::value || std::is_same<T, int>::value ||
-                          std::is_same<T, unsigned long long int>::value || std::is_same<T, float>::value,
+    static_assert(std::is_same_v<T, unsigned int> || std::is_same_v<T, int> ||
+                          std::is_same_v<T, unsigned long long int> || std::is_same_v<T, float>,
                   "stdgpu::atomic_ref: No support for type T");
 
     using value_type = T;               /**< T */
@@ -420,14 +420,14 @@ public:
      * \param[in] obj A reference to the object
      */
     STDGPU_HOST_DEVICE
-    explicit atomic_ref(T& obj);
+    explicit atomic_ref(T& obj) noexcept;
 
     /**
      * \brief Checks whether the atomic operations are lock-free
      * \return True if the operations are lock-free, false otherwise
      */
     STDGPU_HOST_DEVICE bool
-    is_lock_free() const;
+    is_lock_free() const noexcept;
 
     /**
      * \brief Loads and returns the current value of the atomic object
@@ -459,7 +459,7 @@ public:
      * \return The desired value
      * \note Equivalent to store()
      */
-    STDGPU_HOST_DEVICE T // NOLINT(misc-unconventional-assign-operator)
+    STDGPU_HOST_DEVICE T // NOLINT(misc-unconventional-assign-operator,cppcoreguidelines-c-copy-assignment-signature)
     operator=(const T desired);
 
     /**
@@ -469,7 +469,7 @@ public:
      * \return The old value
      */
     STDGPU_DEVICE_ONLY T
-    exchange(const T desired, const memory_order order = memory_order_seq_cst);
+    exchange(const T desired, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically compares the current value with the given value and exchanges it with the desired one in case
@@ -479,7 +479,7 @@ public:
      * \return True if the value has been changed to desired, false otherwise
      */
     STDGPU_DEVICE_ONLY bool
-    compare_exchange_weak(T& expected, const T desired, const memory_order order = memory_order_seq_cst);
+    compare_exchange_weak(T& expected, const T desired, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically compares the current value with the given value and exchanges it with the desired one in case
@@ -489,7 +489,7 @@ public:
      * \return True if the value has been changed to desired, false otherwise
      */
     STDGPU_DEVICE_ONLY bool
-    compare_exchange_strong(T& expected, const T desired, const memory_order order = memory_order_seq_cst);
+    compare_exchange_strong(T& expected, const T desired, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the addition of the stored value and the given argument
@@ -497,9 +497,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_add(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_add(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the subtraction of the stored value and the given argument
@@ -507,9 +507,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_sub(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_sub(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the bitwise AND of the stored value and the given argument
@@ -517,9 +517,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_and(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_and(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the bitwise OR of the stored value and the given argument
@@ -527,9 +527,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_or(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_or(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the bitwise XOR of the stored value and the given argument
@@ -537,9 +537,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_xor(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_xor(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the minimum of the stored value and the given argument
@@ -547,9 +547,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_min(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_min(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the maximum of the stored value and the given argument
@@ -557,9 +557,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    fetch_max(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_max(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the incrementation of the value and modulus with arg
@@ -567,9 +567,9 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_same<T, unsigned int>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_same_v<T, unsigned int>)>
     STDGPU_DEVICE_ONLY T
-    fetch_inc_mod(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_inc_mod(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically computes and stores the decrementation of the value and modulus with arg
@@ -577,93 +577,93 @@ public:
      * \param[in] order The memory order
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_same<T, unsigned int>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_same_v<T, unsigned int>)>
     STDGPU_DEVICE_ONLY T
-    fetch_dec_mod(const T arg, const memory_order order = memory_order_seq_cst);
+    fetch_dec_mod(const T arg, const memory_order order = memory_order_seq_cst) noexcept;
 
     /**
      * \brief Atomically increments the current value. Equivalent to fetch_add(1) + 1
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator++();
+    operator++() noexcept;
 
     /**
      * \brief Atomically increments the current value. Equivalent to fetch_add(1)
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator++(int);
+    operator++(int) noexcept;
 
     /**
      * \brief Atomically decrements the current value. Equivalent to fetch_sub(1) - 1
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator--();
+    operator--() noexcept;
 
     /**
      * \brief Atomically decrements the current value. Equivalent to fetch_sub(1)
      * \return The old value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator--(int);
+    operator--(int) noexcept;
 
     /**
      * \brief Computes the atomic addition with the argument. Equivalent to fetch_add(arg) + arg
      * \param[in] arg The other argument of addition
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator+=(const T arg);
+    operator+=(const T arg) noexcept;
 
     /**
      * \brief Computes the atomic subtraction with the argument. Equivalent to fetch_sub(arg) + arg
      * \param[in] arg The other argument of subtraction
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value || std::is_floating_point<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T> || std::is_floating_point_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator-=(const T arg);
+    operator-=(const T arg) noexcept;
 
     /**
      * \brief Computes the atomic bitwise AND with the argument. Equivalent to fetch_and(arg) & arg
      * \param[in] arg The other argument of bitwise AND
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator&=(const T arg);
+    operator&=(const T arg) noexcept;
 
     /**
      * \brief Computes the atomic bitwise OR with the argument. Equivalent to fetch_or(arg) | arg
      * \param[in] arg The other argument of bitwise OR
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator|=(const T arg);
+    operator|=(const T arg) noexcept;
 
     /**
      * \brief Computes the atomic bitwise XOR with the argument. Equivalent to fetch_xor(arg) ^ arg
      * \param[in] arg The other argument of bitwise XOR
      * \return The new value
      */
-    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral<T>::value)>
+    template <STDGPU_DETAIL_OVERLOAD_IF(std::is_integral_v<T>)>
     STDGPU_DEVICE_ONLY T
-    operator^=(const T arg);
+    operator^=(const T arg) noexcept;
 
 private:
     template <typename T2, typename Allocator>
     friend class atomic;
 
     STDGPU_HOST_DEVICE
-    explicit atomic_ref(T* value);
+    explicit atomic_ref(T* value) noexcept;
 
     T* _value = nullptr;
 };
@@ -676,7 +676,7 @@ private:
  */
 template <typename T, typename Allocator>
 STDGPU_HOST_DEVICE bool
-atomic_is_lock_free(const atomic<T, Allocator>* obj);
+atomic_is_lock_free(const atomic<T, Allocator>* obj) noexcept;
 
 /**
  * \ingroup atomic
@@ -686,7 +686,7 @@ atomic_is_lock_free(const atomic<T, Allocator>* obj);
  */
 template <typename T, typename Allocator>
 STDGPU_HOST_DEVICE T
-atomic_load(const atomic<T, Allocator>* obj);
+atomic_load(const atomic<T, Allocator>* obj) noexcept;
 
 /**
  * \ingroup atomic
@@ -697,7 +697,7 @@ atomic_load(const atomic<T, Allocator>* obj);
  */
 template <typename T, typename Allocator>
 STDGPU_HOST_DEVICE T
-atomic_load_explicit(const atomic<T, Allocator>* obj, const memory_order order);
+atomic_load_explicit(const atomic<T, Allocator>* obj, const memory_order order) noexcept;
 
 /**
  * \ingroup atomic
@@ -707,7 +707,7 @@ atomic_load_explicit(const atomic<T, Allocator>* obj, const memory_order order);
  */
 template <typename T, typename Allocator>
 STDGPU_HOST_DEVICE void
-atomic_store(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::value_type desired);
+atomic_store(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::value_type desired) noexcept;
 
 /**
  * \ingroup atomic
@@ -720,7 +720,7 @@ template <typename T, typename Allocator>
 STDGPU_HOST_DEVICE void
 atomic_store_explicit(atomic<T, Allocator>* obj,
                       const typename atomic<T, Allocator>::value_type desired,
-                      const memory_order order);
+                      const memory_order order) noexcept;
 
 /**
  * \ingroup atomic
@@ -731,7 +731,7 @@ atomic_store_explicit(atomic<T, Allocator>* obj,
  */
 template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
-atomic_exchange(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::value_type desired);
+atomic_exchange(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::value_type desired) noexcept;
 
 /**
  * \ingroup atomic
@@ -745,7 +745,7 @@ template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
 atomic_exchange_explicit(atomic<T, Allocator>* obj,
                          const typename atomic<T, Allocator>::value_type desired,
-                         const memory_order order);
+                         const memory_order order) noexcept;
 
 /**
  * \ingroup atomic
@@ -758,7 +758,7 @@ template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY bool
 atomic_compare_exchange_weak(atomic<T, Allocator>* obj,
                              typename atomic<T, Allocator>::value_type* expected,
-                             const typename atomic<T, Allocator>::value_type desired);
+                             const typename atomic<T, Allocator>::value_type desired) noexcept;
 
 /**
  * \ingroup atomic
@@ -771,7 +771,7 @@ template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY bool
 atomic_compare_exchange_strong(atomic<T, Allocator>* obj,
                                typename atomic<T, Allocator>::value_type* expected,
-                               const typename atomic<T, Allocator>::value_type desired);
+                               const typename atomic<T, Allocator>::value_type desired) noexcept;
 
 /**
  * \ingroup atomic
@@ -782,7 +782,7 @@ atomic_compare_exchange_strong(atomic<T, Allocator>* obj,
  */
 template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
-atomic_fetch_add(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::difference_type arg);
+atomic_fetch_add(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::difference_type arg) noexcept;
 
 /**
  * \ingroup atomic
@@ -796,7 +796,7 @@ template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
 atomic_fetch_add_explicit(atomic<T, Allocator>* obj,
                           const typename atomic<T, Allocator>::difference_type arg,
-                          const memory_order order);
+                          const memory_order order) noexcept;
 
 /**
  * \ingroup atomic
@@ -807,7 +807,7 @@ atomic_fetch_add_explicit(atomic<T, Allocator>* obj,
  */
 template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
-atomic_fetch_sub(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::difference_type arg);
+atomic_fetch_sub(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::difference_type arg) noexcept;
 
 /**
  * \ingroup atomic
@@ -821,7 +821,7 @@ template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
 atomic_fetch_sub_explicit(atomic<T, Allocator>* obj,
                           const typename atomic<T, Allocator>::difference_type arg,
-                          const memory_order order);
+                          const memory_order order) noexcept;
 
 /**
  * \ingroup atomic
@@ -832,7 +832,7 @@ atomic_fetch_sub_explicit(atomic<T, Allocator>* obj,
  */
 template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
-atomic_fetch_and(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::difference_type arg);
+atomic_fetch_and(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::difference_type arg) noexcept;
 
 /**
  * \ingroup atomic
@@ -846,7 +846,7 @@ template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
 atomic_fetch_and_explicit(atomic<T, Allocator>* obj,
                           const typename atomic<T, Allocator>::difference_type arg,
-                          const memory_order order);
+                          const memory_order order) noexcept;
 
 /**
  * \ingroup atomic
@@ -857,7 +857,7 @@ atomic_fetch_and_explicit(atomic<T, Allocator>* obj,
  */
 template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
-atomic_fetch_or(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::difference_type arg);
+atomic_fetch_or(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::difference_type arg) noexcept;
 
 /**
  * \ingroup atomic
@@ -871,7 +871,7 @@ template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
 atomic_fetch_or_explicit(atomic<T, Allocator>* obj,
                          const typename atomic<T, Allocator>::difference_type arg,
-                         const memory_order order);
+                         const memory_order order) noexcept;
 
 /**
  * \ingroup atomic
@@ -882,7 +882,7 @@ atomic_fetch_or_explicit(atomic<T, Allocator>* obj,
  */
 template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
-atomic_fetch_xor(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::difference_type arg);
+atomic_fetch_xor(atomic<T, Allocator>* obj, const typename atomic<T, Allocator>::difference_type arg) noexcept;
 
 /**
  * \ingroup atomic
@@ -896,7 +896,7 @@ template <typename T, typename Allocator>
 STDGPU_DEVICE_ONLY T
 atomic_fetch_xor_explicit(atomic<T, Allocator>* obj,
                           const typename atomic<T, Allocator>::difference_type arg,
-                          const memory_order order);
+                          const memory_order order) noexcept;
 
 } // namespace stdgpu
 

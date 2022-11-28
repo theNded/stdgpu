@@ -15,4 +15,4 @@ fi
 
 # Install project
 cmake -E cmake_echo_color --blue ">>>>> Install stdgpu project ($CONFIG)"
-cmake --install build --config $CONFIG --component stdgpu
+cmake --install build --config $CONFIG

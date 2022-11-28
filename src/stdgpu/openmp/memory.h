@@ -19,9 +19,7 @@
 #include <stdgpu/cstddef.h>
 #include <stdgpu/memory.h>
 
-namespace stdgpu
-{
-namespace openmp
+namespace stdgpu::openmp
 {
 
 /**
@@ -57,19 +55,11 @@ dispatch_memcpy(void* destination,
                 dynamic_memory_type source_type);
 
 /**
- * \brief Workarounds a synchronization issue with older versions of thrust
- */
-void
-workaround_synchronize_device_thrust();
-
-/**
  * \brief Workarounds a synchronization issue with older GPUs
  */
 void
 workaround_synchronize_managed_memory();
 
-} // namespace openmp
-
-} // namespace stdgpu
+} // namespace stdgpu::openmp
 
 #endif // STDGPU_OPENMP_MEMORY_H

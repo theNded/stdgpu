@@ -16,22 +16,24 @@
 #ifndef STDGPU_BIT_DETAIL_H
 #define STDGPU_BIT_DETAIL_H
 
+#include <cstddef>
+
 #include <stdgpu/contract.h>
 #include <stdgpu/limits.h>
 
 namespace stdgpu
 {
 
-template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE bool
-has_single_bit(const T number)
+has_single_bit(const T number) noexcept
 {
     return ((number != 0) && !(number & (number - static_cast<T>(1))));
 }
 
-template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE T
-bit_ceil(const T number)
+bit_ceil(const T number) noexcept
 {
     T result = number;
 
@@ -52,9 +54,9 @@ bit_ceil(const T number)
     return result;
 }
 
-template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE T
-bit_floor(const T number)
+bit_floor(const T number) noexcept
 {
     // Special case zero
     if (number == 0)
@@ -74,9 +76,9 @@ bit_floor(const T number)
     return result;
 }
 
-template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE T
-bit_mod(const T number, const T divider)
+bit_mod(const T number, const T divider) noexcept
 {
     STDGPU_EXPECTS(has_single_bit(divider));
 
@@ -87,9 +89,9 @@ bit_mod(const T number, const T divider)
     return result;
 }
 
-template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE T
-bit_width(const T number)
+bit_width(const T number) noexcept
 {
     if (number == 0)
     {
@@ -108,13 +110,13 @@ bit_width(const T number)
     return result;
 }
 
-template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE int
-popcount(const T number)
+popcount(const T number) noexcept
 {
-    int result;
+    int result = 0;
     T cleared_number = number;
-    for (result = 0; cleared_number; ++result)
+    for (; cleared_number; ++result)
     {
         // Clear the least significant bit set
         cleared_number &= cleared_number - static_cast<T>(1);
@@ -128,17 +130,20 @@ popcount(const T number)
 
 template <typename To,
           typename From,
-          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(sizeof(To) == sizeof(From) && std::is_trivially_copyable<To>::value &&
-                                               std::is_trivially_copyable<From>::value)>
+          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(sizeof(To) == sizeof(From) && std::is_trivially_copyable_v<To> &&
+                                               std::is_trivially_copyable_v<From>)>
 STDGPU_HOST_DEVICE To
-bit_cast(const From& object)
+bit_cast(const From& object) noexcept
 {
     To result;
 
-    auto* result_bytes = reinterpret_cast<unsigned char*>(&result);
-    const auto* object_bytes = reinterpret_cast<const unsigned char*>(&object);
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    auto* result_bytes = reinterpret_cast<std::byte*>(&result);
 
-    for (unsigned int i = 0; i < sizeof(To); ++i)
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    const auto* object_bytes = reinterpret_cast<const std::byte*>(&object);
+
+    for (std::size_t i = 0; i < sizeof(To); ++i)
     {
         result_bytes[i] = object_bytes[i];
     }

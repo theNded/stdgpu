@@ -41,7 +41,7 @@ template class unordered_set<int>;
 // Instantiation of variadic templates emit warnings in CUDA backend
 /*
 template
-STDGPU_DEVICE_ONLY thrust::pair<typename unordered_set<int>::iterator, bool>
+STDGPU_DEVICE_ONLY pair<typename unordered_set<int>::iterator, bool>
 unordered_set<int>::emplace<int>(int&&);
 */
 
@@ -141,6 +141,14 @@ struct vec3int32
     {
         // nontrivial destructor
     }
+
+    vec3int32(const vec3int32&) = default;
+    vec3int32&
+    operator=(const vec3int32&) = default;
+
+    vec3int32(vec3int32&&) = default;
+    vec3int32&
+    operator=(vec3int32&&) = default;
 
     std::int32_t x = 0; // NOLINT(misc-non-private-member-variables-in-classes)
     std::int32_t y = 0; // NOLINT(misc-non-private-member-variables-in-classes)

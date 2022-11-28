@@ -52,8 +52,8 @@ TEST_F(stdgpu_contract, expects_host_value)
 TEST_F(stdgpu_contract, expects_host_expression)
 {
 #if STDGPU_ENABLE_CONTRACT_CHECKS
-    volatile int value_1 = 42;
-    volatile int value_2 = 24;
+    volatile int value_1 = 42; // NOLINT(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+    volatile int value_2 = 24; // NOLINT(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
 
     STDGPU_EXPECTS(value_1 == 42 && value_2 > 0);
 
@@ -64,10 +64,10 @@ TEST_F(stdgpu_contract, expects_host_expression)
 TEST_F(stdgpu_contract, expects_host_comma_expression)
 {
 #if STDGPU_ENABLE_CONTRACT_CHECKS
-    STDGPU_EXPECTS(std::is_same<int, int>::value); // NOLINT(hicpp-static-assert,misc-static-assert)
+    STDGPU_EXPECTS(std::is_same_v<int, int>); // NOLINT(hicpp-static-assert,misc-static-assert,cert-dcl03-c)
 
-    // NOLINTNEXTLINE(hicpp-no-array-decay,hicpp-avoid-goto,hicpp-static-assert,misc-static-assert)
-    EXPECT_DEATH(STDGPU_EXPECTS(std::is_same<int, float>::value), "");
+    // NOLINTNEXTLINE(hicpp-no-array-decay,hicpp-avoid-goto,hicpp-static-assert,misc-static-assert,cert-dcl03-c)
+    EXPECT_DEATH(STDGPU_EXPECTS(std::is_same_v<int, float>), "");
 #endif
 }
 
@@ -87,8 +87,8 @@ TEST_F(stdgpu_contract, ensures_host_value)
 TEST_F(stdgpu_contract, ensures_host_expression)
 {
 #if STDGPU_ENABLE_CONTRACT_CHECKS
-    volatile int value_1 = 42;
-    volatile int value_2 = 24;
+    volatile int value_1 = 42; // NOLINT(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+    volatile int value_2 = 24; // NOLINT(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
 
     STDGPU_ENSURES(value_1 == 42 && value_2 > 0);
 
@@ -99,10 +99,10 @@ TEST_F(stdgpu_contract, ensures_host_expression)
 TEST_F(stdgpu_contract, ensures_host_comma_expression)
 {
 #if STDGPU_ENABLE_CONTRACT_CHECKS
-    STDGPU_ENSURES(std::is_same<int, int>::value); // NOLINT(hicpp-static-assert,misc-static-assert)
+    STDGPU_ENSURES(std::is_same_v<int, int>); // NOLINT(hicpp-static-assert,misc-static-assert,cert-dcl03-c)
 
-    // NOLINTNEXTLINE(hicpp-no-array-decay,hicpp-avoid-goto,hicpp-static-assert,misc-static-assert)
-    EXPECT_DEATH(STDGPU_ENSURES(std::is_same<int, float>::value), "");
+    // NOLINTNEXTLINE(hicpp-no-array-decay,hicpp-avoid-goto,hicpp-static-assert,misc-static-assert,cert-dcl03-c)
+    EXPECT_DEATH(STDGPU_ENSURES(std::is_same_v<int, float>), "");
 #endif
 }
 
@@ -122,8 +122,8 @@ TEST_F(stdgpu_contract, assert_host_value)
 TEST_F(stdgpu_contract, assert_host_expression)
 {
 #if STDGPU_ENABLE_CONTRACT_CHECKS
-    volatile int value_1 = 42;
-    volatile int value_2 = 24;
+    volatile int value_1 = 42; // NOLINT(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
+    volatile int value_2 = 24; // NOLINT(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
 
     STDGPU_ASSERT(value_1 == 42 && value_2 > 0);
 
@@ -134,9 +134,9 @@ TEST_F(stdgpu_contract, assert_host_expression)
 TEST_F(stdgpu_contract, assert_host_comma_expression)
 {
 #if STDGPU_ENABLE_CONTRACT_CHECKS
-    STDGPU_ASSERT(std::is_same<int, int>::value); // NOLINT(hicpp-static-assert,misc-static-assert)
+    STDGPU_ASSERT(std::is_same_v<int, int>); // NOLINT(hicpp-static-assert,misc-static-assert,cert-dcl03-c)
 
-    // NOLINTNEXTLINE(hicpp-no-array-decay,hicpp-avoid-goto,hicpp-static-assert,misc-static-assert)
-    EXPECT_DEATH(STDGPU_ASSERT(std::is_same<int, float>::value), "");
+    // NOLINTNEXTLINE(hicpp-no-array-decay,hicpp-avoid-goto,hicpp-static-assert,misc-static-assert,cert-dcl03-c)
+    EXPECT_DEATH(STDGPU_ASSERT(std::is_same_v<int, float>), "");
 #endif
 }

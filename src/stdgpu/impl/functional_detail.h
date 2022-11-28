@@ -20,6 +20,7 @@
 
 #include <stdgpu/bit.h>
 #include <stdgpu/cstddef.h>
+#include <stdgpu/utility.h>
 
 namespace stdgpu
 {
@@ -74,18 +75,31 @@ hash<E>::operator()(const E& key) const
 }
 
 template <typename T>
-inline STDGPU_HOST_DEVICE bool
-equal_to<T>::operator()(const T& lhs, const T& rhs) const
+inline STDGPU_HOST_DEVICE T&&
+identity::operator()(T&& t) const noexcept
 {
-    return lhs == rhs;
+    return forward<T>(t);
 }
 
-template <typename T, typename U>
-inline STDGPU_HOST_DEVICE auto
-equal_to<void>::operator()(T&& lhs, U&& rhs) const -> decltype(forward<T>(lhs) == forward<U>(rhs))
-{
-    return forward<T>(lhs) == forward<U>(rhs);
-}
+#define STDGPU_DETAIL_COMPOUND_BINARY_OPERATOR(NAME, OP, RETURN_TYPE)                                                  \
+    template <typename T> /* NOLINTNEXTLINE(bugprone-macro-parentheses,misc-macro-parentheses) */                      \
+    inline STDGPU_HOST_DEVICE RETURN_TYPE NAME<T>::operator()(const T& lhs, const T& rhs) const                        \
+    {                                                                                                                  \
+        return lhs OP rhs;                                                                                             \
+    }                                                                                                                  \
+                                                                                                                       \
+    template <typename T, typename U> /* NOLINTNEXTLINE(bugprone-macro-parentheses,misc-macro-parentheses) */          \
+    inline STDGPU_HOST_DEVICE auto NAME<void>::operator()(T&& lhs, U&& rhs)                                            \
+            const->decltype(forward<T>(lhs) OP forward<U>(rhs))                                                        \
+    {                                                                                                                  \
+        return forward<T>(lhs) OP forward<U>(rhs);                                                                     \
+    }
+
+STDGPU_DETAIL_COMPOUND_BINARY_OPERATOR(plus, +, T)
+STDGPU_DETAIL_COMPOUND_BINARY_OPERATOR(logical_and, &&, bool)
+STDGPU_DETAIL_COMPOUND_BINARY_OPERATOR(equal_to, ==, bool)
+
+#undef STDGPU_DETAIL_COMPOUND_BINARY_OPERATOR
 
 template <typename T>
 inline STDGPU_HOST_DEVICE T

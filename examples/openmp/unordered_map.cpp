@@ -43,10 +43,10 @@ struct square
 
 struct int_pair_plus
 {
-    STDGPU_HOST_DEVICE thrust::pair<int, int>
-    operator()(const thrust::pair<int, int>& lhs, const thrust::pair<int, int>& rhs) const
+    STDGPU_HOST_DEVICE stdgpu::pair<int, int>
+    operator()(const stdgpu::pair<int, int>& lhs, const stdgpu::pair<int, int>& rhs) const
     {
-        return thrust::make_pair(lhs.first + rhs.first, lhs.second + rhs.second);
+        return { lhs.first + rhs.first, lhs.second + rhs.second };
     }
 };
 
@@ -75,7 +75,7 @@ main()
     // This example demonstrates how stdgpu::unordered_map is used to compute a duplicate-free set of numbers.
     //
 
-    stdgpu::index_t n = 100;
+    const stdgpu::index_t n = 100;
 
     int* d_input = createDeviceArray<int>(n);
     int* d_result = createDeviceArray<int>(n / 2);
@@ -97,10 +97,10 @@ main()
     // map : 0, 1, 2, 3, ..., 100
 
     auto range_map = map.device_range();
-    thrust::pair<int, int> sum =
-            thrust::reduce(range_map.begin(), range_map.end(), thrust::make_pair(0, 0), int_pair_plus());
+    stdgpu::pair<int, int> sum =
+            thrust::reduce(range_map.begin(), range_map.end(), stdgpu::pair<int, int>(0, 0), int_pair_plus());
 
-    const thrust::pair<int, int> sum_closed_form = { n * (n + 1) / 2, n * (n + 1) * (2 * n + 1) / 6 };
+    const stdgpu::pair<int, int> sum_closed_form = { n * (n + 1) / 2, n * (n + 1) * (2 * n + 1) / 6 };
 
     std::cout << "The duplicate-free map of numbers contains " << map.size() << " elements (" << n + 1
               << " expected) and the computed sums are (" << sum.first << ", " << sum.second << ") (("

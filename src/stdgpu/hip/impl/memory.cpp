@@ -18,11 +18,8 @@
 #include <cstdio>
 #include <exception>
 #include <hip/hip_runtime_api.h>
-#include <thrust/version.h>
 
-namespace stdgpu
-{
-namespace hip
+namespace stdgpu::hip
 {
 
 /**
@@ -157,15 +154,6 @@ dispatch_memcpy(void* destination,
 }
 
 void
-workaround_synchronize_device_thrust()
-{
-// We need to synchronize the device before exiting the calling function
-#if THRUST_VERSION <= 100903
-    STDGPU_HIP_SAFE_CALL(hipDeviceSynchronize());
-#endif
-}
-
-void
 workaround_synchronize_managed_memory()
 {
     // We need to synchronize the whole device before accessing managed memory on old GPUs
@@ -184,6 +172,4 @@ workaround_synchronize_managed_memory()
     }
 }
 
-} // namespace hip
-
-} // namespace stdgpu
+} // namespace stdgpu::hip

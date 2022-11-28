@@ -28,7 +28,6 @@
 
 #include <thrust/iterator/transform_iterator.h>
 
-#include <stdgpu/attribute.h>
 #include <stdgpu/cstddef.h>
 #include <stdgpu/iterator.h>
 #include <stdgpu/platform.h>
@@ -90,14 +89,14 @@ public:
      * \return An iterator to the begin of the range
      */
     STDGPU_HOST_DEVICE iterator
-    begin() const;
+    begin() const noexcept;
 
     /**
      * \brief An iterator to the end of the range
      * \return An iterator to the end of the range
      */
     STDGPU_HOST_DEVICE iterator
-    end() const;
+    end() const noexcept;
 
     /**
      * \brief The size
@@ -110,7 +109,7 @@ public:
      * \brief Checks if the range is empty
      * \return True if the range is empty, false otherwise
      */
-    STDGPU_NODISCARD STDGPU_HOST_DEVICE bool
+    [[nodiscard]] STDGPU_HOST_DEVICE bool
     empty() const;
 
 private:
@@ -172,14 +171,14 @@ public:
      * \return An iterator to the begin of the range
      */
     STDGPU_HOST_DEVICE iterator
-    begin() const;
+    begin() const noexcept;
 
     /**
      * \brief An iterator to the end of the range
      * \return An iterator to the end of the range
      */
     STDGPU_HOST_DEVICE iterator
-    end() const;
+    end() const noexcept;
 
     /**
      * \brief The size
@@ -192,7 +191,7 @@ public:
      * \brief Checks if the range is empty
      * \return True if the range is empty, false otherwise
      */
-    STDGPU_NODISCARD STDGPU_HOST_DEVICE bool
+    [[nodiscard]] STDGPU_HOST_DEVICE bool
     empty() const;
 
 private:
@@ -242,14 +241,14 @@ public:
      * \return An iterator to the begin of the range
      */
     STDGPU_HOST_DEVICE iterator
-    begin() const;
+    begin() const noexcept;
 
     /**
      * \brief An iterator to the end of the range
      * \return An iterator to the end of the range
      */
     STDGPU_HOST_DEVICE iterator
-    end() const;
+    end() const noexcept;
 
     /**
      * \brief The size
@@ -262,7 +261,7 @@ public:
      * \brief Checks if the range is empty
      * \return True if the range is empty, false otherwise
      */
-    STDGPU_NODISCARD STDGPU_HOST_DEVICE bool
+    [[nodiscard]] STDGPU_HOST_DEVICE bool
     empty() const;
 
 private:

@@ -40,9 +40,9 @@ namespace stdgpu
  * \param[in] number A number
  * \return True if number is a power of two, false otherwise
  */
-template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE bool
-has_single_bit(const T number);
+has_single_bit(const T number) noexcept;
 
 /**
  * \ingroup bit
@@ -50,9 +50,9 @@ has_single_bit(const T number);
  * \param[in] number A number
  * \return The smallest power of two which is larger than the given number
  */
-template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE T
-bit_ceil(const T number);
+bit_ceil(const T number) noexcept;
 
 /**
  * \ingroup bit
@@ -60,9 +60,9 @@ bit_ceil(const T number);
  * \param[in] number A number
  * \return The largest power of two which is smaller than the given number
  */
-template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE T
-bit_floor(const T number);
+bit_floor(const T number) noexcept;
 
 /**
  * \ingroup bit
@@ -74,9 +74,9 @@ bit_floor(const T number);
  * \post result >= 0
  * \post result < divider
  */
-template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE T
-bit_mod(const T number, const T divider);
+bit_mod(const T number, const T divider) noexcept;
 
 /**
  * \ingroup bit
@@ -86,9 +86,9 @@ bit_mod(const T number, const T divider);
  * \post result >= 0
  * \post result <= numeric_limits<T>::digits
  */
-template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE T
-bit_width(const T number);
+bit_width(const T number) noexcept;
 
 /**
  * \ingroup bit
@@ -98,9 +98,9 @@ bit_width(const T number);
  * \post result >= 0
  * \post result <= numeric_limits<T>::digits
  */
-template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned<T>::value)>
+template <typename T, STDGPU_DETAIL_OVERLOAD_IF(std::is_unsigned_v<T>)>
 STDGPU_HOST_DEVICE int
-popcount(const T number);
+popcount(const T number) noexcept;
 
 /**
  * \ingroup bit
@@ -110,10 +110,10 @@ popcount(const T number);
  */
 template <typename To,
           typename From,
-          STDGPU_DETAIL_OVERLOAD_IF(sizeof(To) == sizeof(From) && std::is_trivially_copyable<To>::value &&
-                                    std::is_trivially_copyable<From>::value)>
+          STDGPU_DETAIL_OVERLOAD_IF(sizeof(To) == sizeof(From) && std::is_trivially_copyable_v<To> &&
+                                    std::is_trivially_copyable_v<From>)>
 STDGPU_HOST_DEVICE To
-bit_cast(const From& object);
+bit_cast(const From& object) noexcept;
 
 } // namespace stdgpu
 

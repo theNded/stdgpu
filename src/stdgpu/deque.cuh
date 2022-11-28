@@ -28,10 +28,7 @@
  * \file stdgpu/deque.cuh
  */
 
-#include <thrust/pair.h>
-
 #include <stdgpu/atomic.cuh>
-#include <stdgpu/attribute.h>
 #include <stdgpu/bitset.cuh>
 #include <stdgpu/cstddef.h>
 #include <stdgpu/iterator.h>
@@ -39,6 +36,7 @@
 #include <stdgpu/mutex.cuh>
 #include <stdgpu/platform.h>
 #include <stdgpu/ranges.h>
+#include <stdgpu/utility.h>
 
 ///////////////////////////////////////////////////////////
 
@@ -101,14 +99,14 @@ public:
     /**
      * \brief Empty constructor
      */
-    deque() = default;
+    deque() noexcept = default;
 
     /**
      * \brief Returns the container allocator
      * \return The container allocator
      */
     STDGPU_HOST_DEVICE allocator_type
-    get_allocator() const;
+    get_allocator() const noexcept;
 
     /**
      * \brief Reads the value at position n
@@ -195,7 +193,7 @@ public:
      * \brief Removes and returns the current element from end of the object
      * \return The currently popped element and true if not empty, an empty element T() and false otherwise
      */
-    STDGPU_DEVICE_ONLY thrust::pair<T, bool>
+    STDGPU_DEVICE_ONLY pair<T, bool>
     pop_back();
 
     /**
@@ -219,14 +217,14 @@ public:
      * \brief Removes and returns the current element from front of the object
      * \return The currently popped element and true if not empty, an empty element T() and false otherwise
      */
-    STDGPU_DEVICE_ONLY thrust::pair<T, bool>
+    STDGPU_DEVICE_ONLY pair<T, bool>
     pop_front();
 
     /**
      * \brief Checks if the object is empty
      * \return True if the object is empty, false otherwise
      */
-    STDGPU_NODISCARD STDGPU_HOST_DEVICE bool
+    [[nodiscard]] STDGPU_HOST_DEVICE bool
     empty() const;
 
     /**
@@ -248,14 +246,14 @@ public:
      * \return The maximal size
      */
     STDGPU_HOST_DEVICE index_t
-    max_size() const;
+    max_size() const noexcept;
 
     /**
      * \brief Returns the capacity
      * \return The capacity
      */
     STDGPU_HOST_DEVICE index_t
-    capacity() const;
+    capacity() const noexcept;
 
     /**
      * \brief Requests to shrink the capacity to the current size
@@ -269,14 +267,14 @@ public:
      * \return The underlying array
      */
     const T*
-    data() const;
+    data() const noexcept;
 
     /**
      * \brief Returns a pointer to the underlying data
      * \return The underlying array
      */
     T*
-    data();
+    data() noexcept;
 
     /**
      * \brief Clears the complete object

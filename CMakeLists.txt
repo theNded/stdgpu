@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15...3.23)
+cmake_minimum_required(VERSION 3.18...3.24)
 message(STATUS "Configuring with CMake ${CMAKE_VERSION}")
 
 
@@ -15,8 +15,9 @@ endif()
 
 option(STDGPU_BUILD_SHARED_LIBS "Builds the project as a shared library, if set to ON, or as a static library, if set to OFF, default: BUILD_SHARED_LIBS" ${BUILD_SHARED_LIBS})
 option(STDGPU_SETUP_COMPILER_FLAGS "Constructs the compiler flags, default: ON if standalone, OFF if included via add_subdirectory" ${STDGPU_SETUP_COMPILER_FLAGS_DEFAULT})
-option(STDGPU_TREAT_WARNINGS_AS_ERRORS "Treats compiler warnings as errors, default: OFF" OFF)
+option(STDGPU_COMPILE_WARNING_AS_ERROR "Treats compiler warnings as errors, default: OFF" OFF)
 option(STDGPU_BUILD_EXAMPLES "Build the examples, default: ON" ON)
+option(STDGPU_BUILD_BENCHMARKS "Build the benchmarks, default: ON" ON)
 option(STDGPU_BUILD_TESTS "Build the unit tests, default: ON" ON)
 option(STDGPU_BUILD_TEST_COVERAGE "Build a test coverage report, default: OFF" OFF)
 option(STDGPU_ANALYZE_WITH_CLANG_TIDY "Analyzes the code with clang-tidy, default: OFF" OFF)
@@ -55,7 +56,7 @@ if(STDGPU_BACKEND STREQUAL STDGPU_BACKEND_CUDA)
 
     enable_language(CUDA)
 elseif(STDGPU_BACKEND STREQUAL STDGPU_BACKEND_HIP)
-    cmake_minimum_required(VERSION 3.21.3...3.23)
+    cmake_minimum_required(VERSION 3.21.3...3.24)
 
     if(DEFINED CMAKE_HIP_ARCHITECTURES)
         set(STDGPU_HIP_ARCHITECTURE_FLAGS_USER ${CMAKE_HIP_ARCHITECTURES})
@@ -78,18 +79,13 @@ if(STDGPU_SETUP_COMPILER_FLAGS)
     message(STATUS "Created test device flags : ${STDGPU_TEST_DEVICE_FLAGS}")
 
     if(STDGPU_BACKEND STREQUAL STDGPU_BACKEND_CUDA)
-        if(STDGPU_CUDA_ARCHITECTURE_FLAGS_USER AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
+        if(STDGPU_CUDA_ARCHITECTURE_FLAGS_USER)
             # CMAKE_CUDA_ARCHITECTURES already set by the user
             message(STATUS "Detected user-provided CCs : ${STDGPU_CUDA_ARCHITECTURE_FLAGS_USER}")
         else()
             stdgpu_cuda_set_architecture_flags(STDGPU_CUDA_ARCHITECTURE_FLAGS)
             if(STDGPU_CUDA_ARCHITECTURE_FLAGS)
-                if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
-                    set(CMAKE_CUDA_ARCHITECTURES ${STDGPU_CUDA_ARCHITECTURE_FLAGS})
-                else()
-                    string(APPEND CMAKE_CUDA_FLAGS "${STDGPU_CUDA_ARCHITECTURE_FLAGS}")
-                    message(STATUS "Building with modified CMAKE_CUDA_FLAGS : ${CMAKE_CUDA_FLAGS}")
-                endif()
+                set(CMAKE_CUDA_ARCHITECTURES ${STDGPU_CUDA_ARCHITECTURE_FLAGS})
             else()
                 message(WARNING "Falling back to default CCs : ${CMAKE_CUDA_ARCHITECTURES}")
             endif()
@@ -121,7 +117,7 @@ endif()
 if(STDGPU_BUILD_TESTS AND STDGPU_BUILD_TEST_COVERAGE)
     include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/code_coverage.cmake")
     append_coverage_compiler_flags()
-    set(COVERAGE_EXCLUDES '*CMake*' '*examples/*' '*external/*' '*test/*' '/usr/*')
+    set(COVERAGE_EXCLUDES '*CMake*' '*benchmark/*' '*examples/*' '*external/*' '*test/*' '/usr/*')
 endif()
 
 
@@ -183,9 +179,16 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/stdgpu-config.cmake"
         COMPONENT stdgpu)
 
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/add_uninstall_target.cmake")
+
+
 if(STDGPU_BUILD_EXAMPLES)
     enable_testing()
     add_subdirectory(examples)
+endif()
+
+if(STDGPU_BUILD_BENCHMARKS)
+    add_subdirectory(benchmark)
 endif()
 
 if(STDGPU_BUILD_TESTS)
@@ -203,12 +206,3 @@ endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/config_summary.cmake")
 stdgpu_print_configuration_summary()
-# uninstall target
-if (NOT TARGET uninstall)
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-                   "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-                   IMMEDIATE @ONLY)
-
-    add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P
-                      ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
-endif ()

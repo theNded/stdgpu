@@ -9,6 +9,7 @@ target_sources(teststdgpu PRIVATE algorithm.cpp
                                   iterator.cpp
                                   limits.cpp
                                   memory.cpp
+                                  numeric.cpp
                                   ranges.cpp)
 
 target_sources(teststdgpu PRIVATE ../test_memory_utils.cpp)
@@ -29,6 +30,9 @@ target_link_libraries(teststdgpu PRIVATE
 
 set_target_properties(teststdgpu PROPERTIES CXX_CLANG_TIDY "${STDGPU_PROPERTY_CLANG_TIDY}")
 set_target_properties(teststdgpu PROPERTIES CXX_CPPCHECK "${STDGPU_PROPERTY_CPPCHECK}")
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+    set_target_properties(teststdgpu PROPERTIES COMPILE_WARNING_AS_ERROR "${STDGPU_COMPILE_WARNING_AS_ERROR}")
+endif()
 
 
 add_test(NAME teststdgpu

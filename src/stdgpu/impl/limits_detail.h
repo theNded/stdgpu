@@ -68,24 +68,6 @@ numeric_limits<T>::infinity() noexcept
     return T();
 }
 
-template <typename T>
-constexpr bool numeric_limits<T>::is_specialized;
-
-template <typename T>
-constexpr bool numeric_limits<T>::is_signed;
-
-template <typename T>
-constexpr bool numeric_limits<T>::is_integer;
-
-template <typename T>
-constexpr bool numeric_limits<T>::is_exact;
-
-template <typename T>
-constexpr int numeric_limits<T>::digits;
-
-template <typename T>
-constexpr int numeric_limits<T>::radix;
-
 constexpr STDGPU_HOST_DEVICE bool
 numeric_limits<bool>::min() noexcept
 {
@@ -653,7 +635,7 @@ numeric_limits<float>::epsilon() noexcept
 constexpr STDGPU_HOST_DEVICE float
 numeric_limits<float>::round_error() noexcept
 {
-    return 0.5F; // NOLINT(readability-magic-numbers)
+    return 0.5F; // NOLINT(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
 }
 
 constexpr STDGPU_HOST_DEVICE float
@@ -689,7 +671,7 @@ numeric_limits<double>::epsilon() noexcept
 constexpr STDGPU_HOST_DEVICE double
 numeric_limits<double>::round_error() noexcept
 {
-    return 0.5; // NOLINT(readability-magic-numbers)
+    return 0.5; // NOLINT(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
 }
 
 constexpr STDGPU_HOST_DEVICE double
@@ -725,7 +707,7 @@ numeric_limits<long double>::epsilon() noexcept
 constexpr STDGPU_HOST_DEVICE long double
 numeric_limits<long double>::round_error() noexcept
 {
-    return 0.5L; // NOLINT(readability-magic-numbers)
+    return 0.5L; // NOLINT(readability-magic-numbers,cppcoreguidelines-avoid-magic-numbers)
 }
 
 constexpr STDGPU_HOST_DEVICE long double

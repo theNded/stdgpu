@@ -16,6 +16,8 @@
 #ifndef STDGPU_UNORDERED_MAP_DETAIL_H
 #define STDGPU_UNORDERED_MAP_DETAIL_H
 
+#include <utility>
+
 #include <stdgpu/bit.h>
 #include <stdgpu/contract.h>
 #include <stdgpu/utility.h>
@@ -40,49 +42,49 @@ struct select1st
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 inline STDGPU_HOST_DEVICE typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::allocator_type
-unordered_map<Key, T, Hash, KeyEqual, Allocator>::get_allocator() const
+unordered_map<Key, T, Hash, KeyEqual, Allocator>::get_allocator() const noexcept
 {
     return _base.get_allocator();
 }
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 inline STDGPU_DEVICE_ONLY typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::iterator
-unordered_map<Key, T, Hash, KeyEqual, Allocator>::begin()
+unordered_map<Key, T, Hash, KeyEqual, Allocator>::begin() noexcept
 {
     return _base.begin();
 }
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 inline STDGPU_DEVICE_ONLY typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::const_iterator
-unordered_map<Key, T, Hash, KeyEqual, Allocator>::begin() const
+unordered_map<Key, T, Hash, KeyEqual, Allocator>::begin() const noexcept
 {
     return _base.begin();
 }
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 inline STDGPU_DEVICE_ONLY typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::const_iterator
-unordered_map<Key, T, Hash, KeyEqual, Allocator>::cbegin() const
+unordered_map<Key, T, Hash, KeyEqual, Allocator>::cbegin() const noexcept
 {
     return _base.cbegin();
 }
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 inline STDGPU_DEVICE_ONLY typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::iterator
-unordered_map<Key, T, Hash, KeyEqual, Allocator>::end()
+unordered_map<Key, T, Hash, KeyEqual, Allocator>::end() noexcept
 {
     return _base.end();
 }
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 inline STDGPU_DEVICE_ONLY typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::const_iterator
-unordered_map<Key, T, Hash, KeyEqual, Allocator>::end() const
+unordered_map<Key, T, Hash, KeyEqual, Allocator>::end() const noexcept
 {
     return _base.end();
 }
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 inline STDGPU_DEVICE_ONLY typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::const_iterator
-unordered_map<Key, T, Hash, KeyEqual, Allocator>::cend() const
+unordered_map<Key, T, Hash, KeyEqual, Allocator>::cend() const noexcept
 {
     return _base.cend();
 }
@@ -117,8 +119,7 @@ unordered_map<Key, T, Hash, KeyEqual, Allocator>::count(const key_type& key) con
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 template <typename KeyLike,
-          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(
-                  detail::is_transparent<Hash>::value&& detail::is_transparent<KeyEqual>::value)>
+          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::is_transparent_v<Hash>&& detail::is_transparent_v<KeyEqual>)>
 inline STDGPU_DEVICE_ONLY typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::index_type
 unordered_map<Key, T, Hash, KeyEqual, Allocator>::count(const KeyLike& key) const
 {
@@ -141,8 +142,7 @@ unordered_map<Key, T, Hash, KeyEqual, Allocator>::find(const key_type& key) cons
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 template <typename KeyLike,
-          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(
-                  detail::is_transparent<Hash>::value&& detail::is_transparent<KeyEqual>::value)>
+          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::is_transparent_v<Hash>&& detail::is_transparent_v<KeyEqual>)>
 inline STDGPU_DEVICE_ONLY typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::iterator
 unordered_map<Key, T, Hash, KeyEqual, Allocator>::find(const KeyLike& key)
 {
@@ -151,8 +151,7 @@ unordered_map<Key, T, Hash, KeyEqual, Allocator>::find(const KeyLike& key)
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 template <typename KeyLike,
-          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(
-                  detail::is_transparent<Hash>::value&& detail::is_transparent<KeyEqual>::value)>
+          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::is_transparent_v<Hash>&& detail::is_transparent_v<KeyEqual>)>
 inline STDGPU_DEVICE_ONLY typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::const_iterator
 unordered_map<Key, T, Hash, KeyEqual, Allocator>::find(const KeyLike& key) const
 {
@@ -168,8 +167,7 @@ unordered_map<Key, T, Hash, KeyEqual, Allocator>::contains(const key_type& key) 
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 template <typename KeyLike,
-          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(
-                  detail::is_transparent<Hash>::value&& detail::is_transparent<KeyEqual>::value)>
+          STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::is_transparent_v<Hash>&& detail::is_transparent_v<KeyEqual>)>
 inline STDGPU_DEVICE_ONLY bool
 unordered_map<Key, T, Hash, KeyEqual, Allocator>::contains(const KeyLike& key) const
 {
@@ -178,14 +176,14 @@ unordered_map<Key, T, Hash, KeyEqual, Allocator>::contains(const KeyLike& key) c
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 template <class... Args>
-inline STDGPU_DEVICE_ONLY thrust::pair<typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::iterator, bool>
+inline STDGPU_DEVICE_ONLY pair<typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::iterator, bool>
 unordered_map<Key, T, Hash, KeyEqual, Allocator>::emplace(Args&&... args)
 {
     return _base.emplace(forward<Args>(args)...);
 }
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
-inline STDGPU_DEVICE_ONLY thrust::pair<typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::iterator, bool>
+inline STDGPU_DEVICE_ONLY pair<typename unordered_map<Key, T, Hash, KeyEqual, Allocator>::iterator, bool>
 unordered_map<Key, T, Hash, KeyEqual, Allocator>::insert(
         const unordered_map<Key, T, Hash, KeyEqual, Allocator>::value_type& value)
 {
@@ -193,7 +191,7 @@ unordered_map<Key, T, Hash, KeyEqual, Allocator>::insert(
 }
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
-template <typename ValueIterator, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::is_iterator<ValueIterator>::value)>
+template <typename ValueIterator, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::is_iterator_v<ValueIterator>)>
 inline void
 unordered_map<Key, T, Hash, KeyEqual, Allocator>::insert(ValueIterator begin, ValueIterator end)
 {
@@ -209,7 +207,7 @@ unordered_map<Key, T, Hash, KeyEqual, Allocator>::erase(
 }
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
-template <typename KeyIterator, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::is_iterator<KeyIterator>::value)>
+template <typename KeyIterator, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::is_iterator_v<KeyIterator>)>
 inline void
 unordered_map<Key, T, Hash, KeyEqual, Allocator>::erase(KeyIterator begin, KeyIterator end)
 {
@@ -239,7 +237,7 @@ unordered_map<Key, T, Hash, KeyEqual, Allocator>::size() const
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
 inline STDGPU_HOST_DEVICE index_t
-unordered_map<Key, T, Hash, KeyEqual, Allocator>::max_size() const
+unordered_map<Key, T, Hash, KeyEqual, Allocator>::max_size() const noexcept
 {
     return _base.max_size();
 }
@@ -314,8 +312,8 @@ unordered_map<Key, T, Hash, KeyEqual, Allocator>::destroyDeviceObject(
 }
 
 template <typename Key, typename T, typename Hash, typename KeyEqual, typename Allocator>
-unordered_map<Key, T, Hash, KeyEqual, Allocator>::unordered_map(const base_type& base)
-  : _base(base)
+unordered_map<Key, T, Hash, KeyEqual, Allocator>::unordered_map(base_type&& base)
+  : _base(std::move(base))
 {
 }
 

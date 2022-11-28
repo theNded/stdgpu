@@ -31,7 +31,6 @@
 #include <limits>
 #include <type_traits>
 
-#include <stdgpu/attribute.h>
 #include <stdgpu/cstddef.h>
 #include <stdgpu/platform.h>
 
@@ -75,54 +74,69 @@ public:
         reference() = delete;
 
         /**
+         * \brief Default destructor
+         */
+        ~reference() noexcept = default;
+
+        /**
          * \brief Default copy constructor
          * \param[in] x The reference object to copy
          */
         STDGPU_HOST_DEVICE
-        reference(const reference& x) = default;
+        reference(const reference& x) noexcept = default;
 
         /**
          * \brief Performs atomic assignment of a bit value
          * \param[in] x A bit value to assign
          * \return The old value of the bit
          */
-        STDGPU_DEVICE_ONLY bool // NOLINT(misc-unconventional-assign-operator)
-        operator=(bool x);
+        STDGPU_DEVICE_ONLY bool // NOLINT(misc-unconventional-assign-operator,cppcoreguidelines-c-copy-assignment-signature)
+        operator=(bool x) noexcept;
 
         /**
          * \brief Performs atomic assignment of a bit value
          * \param[in] x The reference object to assign
          * \return The old value of the bit
          */
-        STDGPU_DEVICE_ONLY bool // NOLINT(misc-unconventional-assign-operator)
-        operator=(const reference& x);
+        STDGPU_DEVICE_ONLY bool // NOLINT(misc-unconventional-assign-operator,cppcoreguidelines-c-copy-assignment-signature)
+        operator=(const reference& x) noexcept;
+
+        /**
+         * \brief Deleted move constructor
+         */
+        reference(reference&&) = delete;
+
+        /**
+         * \brief Deleted move assignment operator
+         */
+        reference&
+        operator=(reference&&) = delete;
 
         /**
          * \brief Returns the value of the bit
          * \return The value of the bit
          */
         STDGPU_DEVICE_ONLY
-        operator bool() const; // NOLINT(hicpp-explicit-conversions)
+        operator bool() const noexcept; // NOLINT(hicpp-explicit-conversions)
 
         /**
          * \brief Returns the inverse of the value of the bit
          * \return The inverse of the value of the bit
          */
         STDGPU_DEVICE_ONLY bool
-        operator~() const;
+        operator~() const noexcept;
 
         /**
          * \brief Flips the bit atomically
          * \return The old value of the bit
          */
         STDGPU_DEVICE_ONLY bool
-        flip();
+        flip() noexcept;
 
     private:
         using block_type = Block; /**< The type of the stored bit blocks, must be the same as for bitset */
 
-        static_assert(std::is_same<block_type, unsigned int>::value ||
-                              std::is_same<block_type, unsigned long long int>::value,
+        static_assert(std::is_same_v<block_type, unsigned int> || std::is_same_v<block_type, unsigned long long int>,
                       "stdgpu::bitset::reference: block_type not supported");
 
         friend bitset;
@@ -131,7 +145,7 @@ public:
         reference(block_type* bit_block, const index_t bit_n);
 
         static STDGPU_DEVICE_ONLY bool
-        bit(block_type bits, const index_t n);
+        bit(block_type bits, const index_t n) noexcept;
 
         static constexpr index_t _bits_per_block = std::numeric_limits<block_type>::digits;
 
@@ -139,7 +153,7 @@ public:
         index_t _bit_n = -1;
     };
 
-    static_assert(std::is_same<Block, unsigned int>::value || std::is_same<Block, unsigned long long int>::value,
+    static_assert(std::is_same_v<Block, unsigned int> || std::is_same_v<Block, unsigned long long int>,
                   "stdgpu::bitset: Block not supported");
 
     using block_type = Block;         /**< Block */
@@ -164,14 +178,14 @@ public:
     /**
      * \brief Empty constructor
      */
-    bitset() = default;
+    bitset() noexcept = default;
 
     /**
      * \brief Returns the container allocator
      * \return The container allocator
      */
     STDGPU_HOST_DEVICE allocator_type
-    get_allocator() const;
+    get_allocator() const noexcept;
 
     /**
      * \brief Sets all bits
@@ -252,15 +266,15 @@ public:
      * \brief Checks if this object is empty
      * \return True if this object is empty, false otherwise
      */
-    STDGPU_NODISCARD STDGPU_HOST_DEVICE bool
-    empty() const;
+    [[nodiscard]] STDGPU_HOST_DEVICE bool
+    empty() const noexcept;
 
     /**
      * \brief The size
      * \return The size of the object
      */
     STDGPU_HOST_DEVICE index_t
-    size() const;
+    size() const noexcept;
 
     /**
      * \brief The number of set bits
@@ -291,10 +305,10 @@ public:
     none() const;
 
 private:
-    explicit bitset(const Allocator& allocator);
+    explicit bitset(const Allocator& allocator) noexcept;
 
     static index_t
-    number_bit_blocks(const index_t size);
+    number_bit_blocks(const index_t size) noexcept;
 
     static constexpr index_t _bits_per_block = std::numeric_limits<block_type>::digits;
 

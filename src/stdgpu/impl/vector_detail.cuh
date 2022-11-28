@@ -16,14 +16,11 @@
 #ifndef STDGPU_VECTOR_DETAIL_H
 #define STDGPU_VECTOR_DETAIL_H
 
-#include <thrust/for_each.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/zip_iterator.h>
-#include <thrust/tuple.h>
-
+#include <stdgpu/algorithm.h>
 #include <stdgpu/contract.h>
 #include <stdgpu/iterator.h>
 #include <stdgpu/memory.h>
+#include <stdgpu/numeric.h>
 #include <stdgpu/utility.h>
 
 namespace stdgpu
@@ -77,7 +74,7 @@ inline vector<T, Allocator>::vector(const mutex_array<mutex_default_type, mutex_
 
 template <typename T, typename Allocator>
 inline STDGPU_HOST_DEVICE typename vector<T, Allocator>::allocator_type
-vector<T, Allocator>::get_allocator() const
+vector<T, Allocator>::get_allocator() const noexcept
 {
     return _allocator;
 }
@@ -203,11 +200,11 @@ vector<T, Allocator>::push_back(const T& element)
 }
 
 template <typename T, typename Allocator>
-inline STDGPU_DEVICE_ONLY thrust::pair<T, bool>
+inline STDGPU_DEVICE_ONLY pair<T, bool>
 vector<T, Allocator>::pop_back()
 {
     // Value if no element will be popped, i.e. undefined behavior for element of type T
-    thrust::pair<T, bool> popped = thrust::make_pair(_data[0], false);
+    pair<T, bool> popped(_data[0], false);
 
     // Preemptive check
     if (empty())
@@ -258,87 +255,76 @@ vector<T, Allocator>::pop_back()
 namespace detail
 {
 
-template <typename T, typename Allocator, bool update_occupancy>
+template <typename T, typename Allocator, typename ValueIterator, bool update_occupancy>
 class vector_insert
 {
 public:
-    explicit vector_insert(const vector<T, Allocator>& v)
+    vector_insert(const vector<T, Allocator>& v, index_t begin, ValueIterator values)
       : _v(v)
+      , _begin(begin)
+      , _values(values)
     {
     }
 
-    template <typename Value>
     STDGPU_DEVICE_ONLY void
-    operator()(const thrust::tuple<index_t, Value>& value)
+    operator()(const index_t i)
     {
         allocator_traits<typename vector<T, Allocator>::allocator_type>::construct(_v._allocator,
-                                                                                   &(_v._data[thrust::get<0>(value)]),
-                                                                                   thrust::get<1>(value));
+                                                                                   &(_v._data[_begin + i]),
+                                                                                   _values[i]);
 
         if (update_occupancy)
         {
-            _v._occupied.set(thrust::get<0>(value));
+            _v._occupied.set(_begin + i);
         }
     }
 
 private:
     vector<T, Allocator> _v;
+    index_t _begin;
+    ValueIterator _values;
 };
 
 template <typename T, typename Allocator, bool update_occupancy>
 class vector_erase
 {
 public:
-    explicit vector_erase(const vector<T, Allocator>& v)
+    vector_erase(const vector<T, Allocator>& v, const index_t begin)
       : _v(v)
+      , _begin(begin)
     {
     }
 
     STDGPU_DEVICE_ONLY void
-    operator()(const index_t n)
+    operator()(const index_t i)
     {
-        allocator_traits<typename vector<T, Allocator>::allocator_type>::destroy(_v._allocator, &(_v._data[n]));
+        allocator_traits<typename vector<T, Allocator>::allocator_type>::destroy(_v._allocator,
+                                                                                 &(_v._data[_begin + i]));
 
         if (update_occupancy)
         {
-            _v._occupied.reset(n);
+            _v._occupied.reset(_begin + i);
         }
     }
 
 private:
     vector<T, Allocator> _v;
+    index_t _begin;
 };
 
 template <typename T, typename Allocator>
-class vector_clear_fill
+void
+vector_clear_iota(vector<T, Allocator>& v, const T& value)
 {
-public:
-    explicit vector_clear_fill(const vector<T, Allocator>& v)
-      : _v(v)
-    {
-    }
-
-    template <typename ValueIterator, STDGPU_DETAIL_OVERLOAD_IF(detail::is_iterator<ValueIterator>::value)>
-    void
-    operator()(ValueIterator begin, ValueIterator end)
-    {
-        thrust::for_each(
-                thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<index_t>(0), begin)),
-                thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<index_t>(_v.capacity()), end)),
-                detail::vector_insert<T, Allocator, false>(_v));
-
-        _v._occupied.set();
-        _v._size.store(_v.capacity());
-    }
-
-private:
-    vector<T, Allocator> _v;
-};
+    iota(execution::device, device_begin(v.data()), device_end(v.data()), value);
+    v._occupied.set();
+    v._size.store(v.capacity());
+}
 
 } // namespace detail
 
 template <typename T, typename Allocator>
-template <typename ValueIterator, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::is_iterator<ValueIterator>::value)>
+template <typename ValueIterator, STDGPU_DETAIL_OVERLOAD_DEFINITION_IF(detail::is_iterator_v<ValueIterator>)>
 inline void
 vector<T, Allocator>::insert(device_ptr<const T> position, ValueIterator begin, ValueIterator end)
 {
@@ -348,7 +334,8 @@ vector<T, Allocator>::insert(device_ptr<const T> position, ValueIterator begin, 
         return;
     }
 
-    index_t new_size = size() + static_cast<index_t>(thrust::distance(begin, end));
+    index_t N = static_cast<index_t>(end - begin);
+    index_t new_size = size() + N;
 
     if (new_size > capacity())
     {
@@ -359,9 +346,9 @@ vector<T, Allocator>::insert(device_ptr<const T> position, ValueIterator begin, 
         return;
     }
 
-    thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<index_t>(size()), begin)),
-                     thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<index_t>(new_size), end)),
-                     detail::vector_insert<T, Allocator, true>(*this));
+    for_each_index(execution::device,
+                   N,
+                   detail::vector_insert<T, Allocator, ValueIterator, true>(*this, size(), begin));
 
     _size.store(new_size);
 }
@@ -376,7 +363,8 @@ vector<T, Allocator>::erase(device_ptr<const T> begin, device_ptr<const T> end)
         return;
     }
 
-    index_t new_size = size() - static_cast<index_t>(thrust::distance(begin, end));
+    index_t N = static_cast<index_t>(end - begin);
+    index_t new_size = size() - N;
 
     if (new_size < 0)
     {
@@ -385,9 +373,7 @@ vector<T, Allocator>::erase(device_ptr<const T> begin, device_ptr<const T> end)
         return;
     }
 
-    thrust::for_each(thrust::counting_iterator<index_t>(new_size),
-                     thrust::counting_iterator<index_t>(size()),
-                     detail::vector_erase<T, Allocator, true>(*this));
+    for_each_index(execution::device, N, detail::vector_erase<T, Allocator, true>(*this, new_size));
 
     _size.store(new_size);
 }
@@ -437,14 +423,14 @@ vector<T, Allocator>::size() const
 
 template <typename T, typename Allocator>
 inline STDGPU_HOST_DEVICE index_t
-vector<T, Allocator>::max_size() const
+vector<T, Allocator>::max_size() const noexcept
 {
     return capacity();
 }
 
 template <typename T, typename Allocator>
 inline STDGPU_HOST_DEVICE index_t
-vector<T, Allocator>::capacity() const
+vector<T, Allocator>::capacity() const noexcept
 {
     return _occupied.size();
 }
@@ -458,14 +444,14 @@ vector<T, Allocator>::shrink_to_fit()
 
 template <typename T, typename Allocator>
 inline const T*
-vector<T, Allocator>::data() const
+vector<T, Allocator>::data() const noexcept
 {
     return _data;
 }
 
 template <typename T, typename Allocator>
 inline T*
-vector<T, Allocator>::data()
+vector<T, Allocator>::data() noexcept
 {
     return _data;
 }
@@ -483,7 +469,9 @@ vector<T, Allocator>::clear()
     {
         const index_t current_size = size();
 
-        stdgpu::detail::unoptimized_destroy(stdgpu::device_begin(_data), stdgpu::device_begin(_data) + current_size);
+        detail::unoptimized_destroy(execution::device,
+                                    stdgpu::device_begin(_data),
+                                    stdgpu::device_begin(_data) + current_size);
     }
 
     _occupied.reset();

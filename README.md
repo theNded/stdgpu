@@ -177,18 +177,18 @@ Before building the library, please make sure that all required tools and depend
 
 <b>Required</b>
 
-- C++14 compiler
-    - GCC 7
-        - (Ubuntu 18.04/20.04) `sudo apt install g++ make`
-    - Clang 6
-        - (Ubuntu 18.04/20.04) `sudo apt install clang make`
+- C++17 compiler
+    - GCC 9
+        - (Ubuntu 20.04/22.04) `sudo apt install g++`
+    - Clang 10
+        - (Ubuntu 20.04/22.04) `sudo apt install clang`
     - MSVC 19.20
         - (Windows) Visual Studio 2019 https://visualstudio.microsoft.com/downloads/
-- CMake 3.15
-    - (Ubuntu 18.04) https://apt.kitware.com
-    - (Ubuntu 20.04) `sudo apt install cmake`
+- CMake 3.18
+    - (Ubuntu 20.04) https://apt.kitware.com
+    - (Ubuntu 22.04) `sudo apt install cmake`
     - (Windows) https://cmake.org/download
-- thrust 1.9.2
+- thrust 1.9.9
     - (Ubuntu/Windows) https://github.com/NVIDIA/thrust
     - May already be installed by backend dependencies
 
@@ -198,19 +198,18 @@ Before building the library, please make sure that all required tools and depend
     - NVCC
         - Already included in CUDA Toolkit
     - Clang 10
-        - (Ubuntu 18.04/20.04) `sudo apt install clang-10` or https://apt.llvm.org/
-        - Requires at least CMake 3.18
-- CUDA Toolkit 10.0
+        - (Ubuntu 20.04/22.04) `sudo apt install clang`
+- CUDA Toolkit 11.0
     - (Ubuntu/Windows) https://developer.nvidia.com/cuda-downloads
     - Includes thrust
 
 <b>Required for OpenMP backend</b>
 
 - OpenMP 2.0
-    - GCC 7
-        - (Ubuntu 18.04/20.04) Already installed
-    - Clang 6
-        - (Ubuntu 18.04/20.04) `sudo apt install libomp-dev`
+    - GCC 9
+        - (Ubuntu 20.04/22.04) Already installed
+    - Clang 10
+        - (Ubuntu 20.04/22.04) `sudo apt install libomp-dev`
     - MSVC 19.20
         - (Windows) Already installed
 
@@ -220,7 +219,8 @@ Before building the library, please make sure that all required tools and depend
     - (Ubuntu) https://github.com/RadeonOpenCompute/ROCm
     - Includes thrust
 - CMake 3.21.3
-    - (Ubuntu 18.04/20.04) https://apt.kitware.com
+    - (Ubuntu 20.04) https://apt.kitware.com
+    - (Ubuntu 22.04) `sudo apt install cmake`
     - (Windows) https://cmake.org/download
     - Required for first-class HIP language support
 
@@ -234,7 +234,8 @@ Command | Effect
 <code>bash&nbsp;scripts/setup.sh [&lt;build_type&gt;]</code> | Performs a full clean build of the project. Removes old build, configures the project (build path: `./build`, default build type: `Release`), builds the project, and runs the unit tests.
 <code>bash&nbsp;scripts/build.sh [&lt;build_type&gt;]</code> | (Re-)Builds the project. Requires that the project is set up (default build type: `Release`).
 <code>bash&nbsp;scripts/run_tests.sh [&lt;build_type&gt;]</code> | Runs the unit tests. Requires that the project is built (default build type: `Release`).
-<code>bash&nbsp;scripts/install.sh [&lt;build_type&gt;]</code> | Installs the project at the configured install path (default install dir: `./bin`, default build type: `Release`).
+<code>bash&nbsp;scripts/install.sh [&lt;build_type&gt;]</code> | Installs the project to the configured install path (default install dir: `./bin`, default build type: `Release`).
+<code>bash&nbsp;scripts/uninstall.sh [&lt;build_type&gt;]</code> | Uninstalls the project from the configured install path (default build type: `Release`).
 
 
 ## Integration
@@ -258,6 +259,9 @@ Or you can embed it into your project and build it from a subdirectory:
 # Exclude the examples from the build
 set(STDGPU_BUILD_EXAMPLES OFF CACHE INTERNAL "")
 
+# Exclude the benchmarks from the build
+set(STDGPU_BUILD_BENCHMARKS OFF CACHE INTERNAL "")
+
 # Exclude the tests from the build
 set(STDGPU_BUILD_TESTS OFF CACHE INTERNAL "")
 
@@ -276,8 +280,9 @@ Build Option | Effect | Default
 `STDGPU_BACKEND` | Device system backend | `STDGPU_BACKEND_CUDA`
 `STDGPU_BUILD_SHARED_LIBS` | Builds the project as a shared library, if set to `ON`, or as a static library, if set to `OFF` | `BUILD_SHARED_LIBS`
 `STDGPU_SETUP_COMPILER_FLAGS` | Constructs the compiler flags | `ON` if standalone, `OFF` if included via `add_subdirectory`
-`STDGPU_TREAT_WARNINGS_AS_ERRORS` | Treats compiler warnings as errors | `OFF`
+`STDGPU_COMPILE_WARNING_AS_ERROR` | Treats compiler warnings as errors | `OFF`
 `STDGPU_BUILD_EXAMPLES` | Build the examples | `ON`
+`STDGPU_BUILD_BENCHMARKS` | Build the benchmarks | `ON`
 `STDGPU_BUILD_TESTS` | Build the unit tests | `ON`
 `STDGPU_BUILD_TEST_COVERAGE` | Build a test coverage report | `OFF`
 `STDGPU_ANALYZE_WITH_CLANG_TIDY` | Analyzes the code with clang-tidy | `OFF`

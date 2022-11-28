@@ -16,10 +16,7 @@
 #ifndef STDGPU_UNORDERED_BASE_H
 #define STDGPU_UNORDERED_BASE_H
 
-#include <thrust/pair.h>
-
 #include <stdgpu/atomic.cuh>
-#include <stdgpu/attribute.h>
 #include <stdgpu/bitset.cuh>
 #include <stdgpu/cstddef.h>
 #include <stdgpu/functional.h>
@@ -29,12 +26,10 @@
 #include <stdgpu/mutex.cuh>
 #include <stdgpu/platform.h>
 #include <stdgpu/ranges.h>
+#include <stdgpu/utility.h>
 #include <stdgpu/vector.cuh>
 
-namespace stdgpu
-{
-
-namespace detail
+namespace stdgpu::detail
 {
 
 /**
@@ -99,14 +94,14 @@ public:
     /**
      * \brief Empty constructor
      */
-    unordered_base() = default;
+    unordered_base() noexcept = default;
 
     /**
      * \brief Returns the container allocator
      * \return The container allocator
      */
     STDGPU_HOST_DEVICE allocator_type
-    get_allocator() const;
+    get_allocator() const noexcept;
 
     /**
      * \brief Checks if the object is valid
@@ -120,42 +115,42 @@ public:
      * \return An iterator to the begin of the object
      */
     STDGPU_DEVICE_ONLY iterator
-    begin();
+    begin() noexcept;
 
     /**
      * \brief An iterator to the begin of the internal value array
      * \return A const iterator to the begin of the object
      */
     STDGPU_DEVICE_ONLY const_iterator
-    begin() const;
+    begin() const noexcept;
 
     /**
      * \brief An iterator to the begin of the internal value array
      * \return A const iterator to the begin of the object
      */
     STDGPU_DEVICE_ONLY const_iterator
-    cbegin() const;
+    cbegin() const noexcept;
 
     /**
      * \brief An iterator to the end of the internal value array
      * \return An iterator to the end of the object
      */
     STDGPU_DEVICE_ONLY iterator
-    end();
+    end() noexcept;
 
     /**
      * \brief An iterator to the end of the internal value array
      * \return A const iterator to the end of the object
      */
     STDGPU_DEVICE_ONLY const_iterator
-    end() const;
+    end() const noexcept;
 
     /**
      * \brief An iterator to the end of the internal value array
      * \return A const iterator to the end of the object
      */
     STDGPU_DEVICE_ONLY const_iterator
-    cend() const;
+    cend() const noexcept;
 
     /**
      * \brief Builds a range to the values in the container
@@ -195,7 +190,7 @@ public:
      * \return The number of elements with the given key-like value, i.e. 1 or 0
      */
     template <typename KeyLike,
-              STDGPU_DETAIL_OVERLOAD_IF(detail::is_transparent<Hash>::value&& detail::is_transparent<KeyEqual>::value)>
+              STDGPU_DETAIL_OVERLOAD_IF(detail::is_transparent_v<Hash>&& detail::is_transparent_v<KeyEqual>)>
     STDGPU_DEVICE_ONLY index_type
     count(const KeyLike& key) const;
 
@@ -221,7 +216,7 @@ public:
      * \return An iterator to the position of the requested key-like value if it was found, end() otherwise
      */
     template <typename KeyLike,
-              STDGPU_DETAIL_OVERLOAD_IF(detail::is_transparent<Hash>::value&& detail::is_transparent<KeyEqual>::value)>
+              STDGPU_DETAIL_OVERLOAD_IF(detail::is_transparent_v<Hash>&& detail::is_transparent_v<KeyEqual>)>
     STDGPU_DEVICE_ONLY iterator
     find(const KeyLike& key);
 
@@ -231,7 +226,7 @@ public:
      * \return An iterator to the position of the requested key-like value if it was found, end() otherwise
      */
     template <typename KeyLike,
-              STDGPU_DETAIL_OVERLOAD_IF(detail::is_transparent<Hash>::value&& detail::is_transparent<KeyEqual>::value)>
+              STDGPU_DETAIL_OVERLOAD_IF(detail::is_transparent_v<Hash>&& detail::is_transparent_v<KeyEqual>)>
     STDGPU_DEVICE_ONLY const_iterator
     find(const KeyLike& key) const;
 
@@ -249,7 +244,7 @@ public:
      * \return True if the requested key-like value was found, false otherwise
      */
     template <typename KeyLike,
-              STDGPU_DETAIL_OVERLOAD_IF(detail::is_transparent<Hash>::value&& detail::is_transparent<KeyEqual>::value)>
+              STDGPU_DETAIL_OVERLOAD_IF(detail::is_transparent_v<Hash>&& detail::is_transparent_v<KeyEqual>)>
     STDGPU_DEVICE_ONLY bool
     contains(const KeyLike& key) const;
 
@@ -259,7 +254,7 @@ public:
      * \return An iterator to the inserted pair and the operation_status::success if the insertion was successful, end()
      * and failure status otherwise
      */
-    STDGPU_DEVICE_ONLY thrust::pair<iterator, operation_status>
+    STDGPU_DEVICE_ONLY pair<iterator, operation_status>
     try_insert(const value_type& value);
 
     /**
@@ -276,7 +271,7 @@ public:
      * \return An iterator to the inserted pair and true if the insertion was successful, end() and false otherwise
      */
     template <class... Args>
-    STDGPU_DEVICE_ONLY thrust::pair<iterator, bool>
+    STDGPU_DEVICE_ONLY pair<iterator, bool>
     emplace(Args&&... args);
 
     /**
@@ -284,7 +279,7 @@ public:
      * \param[in] value The new value
      * \return An iterator to the inserted pair and true if the insertion was successful, end() and false otherwise
      */
-    STDGPU_DEVICE_ONLY thrust::pair<iterator, bool>
+    STDGPU_DEVICE_ONLY pair<iterator, bool>
     insert(const value_type& value);
 
     /**
@@ -292,7 +287,7 @@ public:
      * \param[in] begin The begin of the range
      * \param[in] end The end of the range
      */
-    template <typename ValueIterator, STDGPU_DETAIL_OVERLOAD_IF(detail::is_iterator<ValueIterator>::value)>
+    template <typename ValueIterator, STDGPU_DETAIL_OVERLOAD_IF(detail::is_iterator_v<ValueIterator>)>
     void
     insert(ValueIterator begin, ValueIterator end);
 
@@ -309,7 +304,7 @@ public:
      * \param[in] begin The begin of the range
      * \param[in] end The end of the range
      */
-    template <typename KeyIterator, STDGPU_DETAIL_OVERLOAD_IF(detail::is_iterator<KeyIterator>::value)>
+    template <typename KeyIterator, STDGPU_DETAIL_OVERLOAD_IF(detail::is_iterator_v<KeyIterator>)>
     void
     erase(KeyIterator begin, KeyIterator end);
 
@@ -323,7 +318,7 @@ public:
      * \brief Checks if the object is empty
      * \return True if the object is empty, false otherwise
      */
-    STDGPU_NODISCARD STDGPU_HOST_DEVICE bool
+    [[nodiscard]] STDGPU_HOST_DEVICE bool
     empty() const;
 
     /**
@@ -345,7 +340,7 @@ public:
      * \return The maximum size
      */
     STDGPU_HOST_DEVICE index_t
-    max_size() const;
+    max_size() const noexcept;
 
     /**
      * \brief The bucket count
@@ -428,7 +423,7 @@ public:
     index_allocator_type _index_allocator = {}; /**< The index allocator */
 
     STDGPU_HOST_DEVICE index_t
-    total_count() const;
+    total_count() const noexcept;
 
     STDGPU_DEVICE_ONLY bool
     occupied(const index_t n) const;
@@ -456,9 +451,7 @@ public:
     bucket_impl(const KeyLike& key) const;
 };
 
-} // namespace detail
-
-} // namespace stdgpu
+} // namespace stdgpu::detail
 
 #include <stdgpu/impl/unordered_base_detail.cuh>
 

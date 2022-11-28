@@ -8,7 +8,7 @@ http://stackoverflow.com/questions/2285185/easiest-way-to-test-for-existence-of-
 License: CC-BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/)
 Copyright 2010, Christopher Bruns
 
-googletest (test/googletest-1.11.0)
+googletest (test/googletest-1.12.1)
 https://github.com/google/googletest
 License: BSD-3 Clause (https://opensource.org/licenses/BSD-3-Clause)
 Copyright 2008, Google Inc.
@@ -17,3 +17,13 @@ Code Coverage Script (cmake/code_coverage.cmake)
 https://github.com/bilke/cmake-modules/blob/master/CodeCoverage.cmake
 License: BSD-3 Clause (https://opensource.org/licenses/BSD-3-Clause)
 Copyright 2012 - 2017, Lars Bilke
+
+Uninstall Target (cmake/add_uninstall_target.cmake, cmake/cmake_uninstall.cmake.in)
+https://gitlab.kitware.com/cmake/community/-/wikis/FAQ#can-i-do-make-uninstall-with-cmake
+License: BSD-3 Clause (https://opensource.org/licenses/BSD-3-Clause)
+Copyright 2000 - 2022 Kitware, Inc. and Contributors
+
+benchmark (test/benchmark-1.7.0)
+https://github.com/google/benchmark
+License: Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+Copyright 2015, Google Inc.

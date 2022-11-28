@@ -18,11 +18,8 @@
 #include <cstdio>
 #include <cuda_runtime_api.h> // Include after thrust to avoid redefinition warning for __host__ and __device__ in .cpp files
 #include <exception>
-#include <thrust/version.h>
 
-namespace stdgpu
-{
-namespace cuda
+namespace stdgpu::cuda
 {
 
 /**
@@ -157,15 +154,6 @@ dispatch_memcpy(void* destination,
 }
 
 void
-workaround_synchronize_device_thrust()
-{
-// We need to synchronize the device before exiting the calling function
-#if THRUST_VERSION <= 100903 // CUDA 10.0 and below
-    STDGPU_CUDA_SAFE_CALL(cudaDeviceSynchronize());
-#endif
-}
-
-void
 workaround_synchronize_managed_memory()
 {
     // We need to synchronize the whole device before accessing managed memory on pre-Pascal GPUs
@@ -183,6 +171,4 @@ workaround_synchronize_managed_memory()
     }
 }
 
-} // namespace cuda
-
-} // namespace stdgpu
+} // namespace stdgpu::cuda
